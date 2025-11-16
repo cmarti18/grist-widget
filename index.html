@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrice de risques</title>
+    <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+<style>
+tbody {color:black;}
+
+table, tr, th {
+  border: 1px solid black;
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+<table>
+  <tbody>
+    <tr>
+      <td style="width:160px; background-color: lightgray;">Proba. / Impact</td>
+      <td style="width:120px; background-color: lightgray;">1- Mineur</td>
+      <td style="width:120px; background-color: lightgray;">2- Moyen</td>
+      <td style="width:120px; background-color: lightgray;">3- Important</td>
+      <td style="width:120px; background-color: lightgray;">4- Majeur</td>
+   </tr>
+   <tr style="height:30px;">
+      <td id="" style="background-color: lightgray;">Tr&egrave;s forte</td>
+      <td id="p4i1" style="background-color: #FEF86C;"></td>
+      <td id="p4i2" style="background-color: orange;"></td>
+      <td id="p4i3" style="background-color: tomato;"></td>
+      <td id="p4i4" style="background-color: tomato;"></td>
+    </tr>
+    <tr style="height:30px;">
+      <td id="" style="background-color: lightgray;">Forte</td>
+      <td id="p3i1" style="background-color: #FEF86C  ;"></td>
+      <td id="p3i2" style="background-color: #FEF86C;"></td>
+      <td id="p3i3" style="background-color: orange;"></td>
+      <td id="p3i4" style="background-color: tomato;"></td>
+    </tr>
+    <tr style="height:30px;">
+      <td id="" style="background-color: lightgray;">Moyenne</td>
+      <td id="p2i1" style="background-color: lightgreen;"></td>
+      <td id="p2i2" style="background-color: #FEF86C;"></td>
+      <td id="p2i3" style="background-color: #FEF86C;"></td>
+      <td id="p2i4" style="background-color: orange;"></td>
+    </tr>
+    <tr style="height:30px;">
+      <td id="" style="background-color: lightgray;">Faible</td>
+      <td id="p1i1" style="background-color: lightgreen;"></td>
+      <td id="p1i2" style="background-color: lightgreen;"></td>
+      <td id="p1i3" style="background-color: #FEF86C;"></td>
+      <td id="p1i4" style="background-color: #FEF86C;"></td>
+    </tr>
+ 
+  </tbody>
+</table>
+
+<script>
+// Mapping des colonnes
+
+grist.ready({columns: ['Code', 'Probabilite', 'Impact'], requiredAccess: 'read table'});
+
+grist.onRecords(function(records) {
+
+  // Nettoyer toutes les cellules du tableau
+  for (let p = 1; p <= 4; p++) {
+    for (let i = 1; i <= 4; i++) {
+      const cell = document.getElementById(`p${p}i${i}`);
+      if (cell) cell.innerText = ""; 
+    }
+  }
+  
+  records.forEach(record => {
+    //const { Code, Probabilite, Impact } = record.fields;
+    //if (!Code || !Probabilite || !Impact) return;
+    const mapped = grist.mapColumnNames(record);
+
+    const pNum = parseInt(mapped.Probabilite.toString().charAt(0), 10);
+    const iNum = parseInt(mapped.Impact.toString().charAt(0), 10);
+
+    if (isNaN(pNum) || isNaN(iNum)) return;
+
+    const cellId = `p${pNum}i${iNum}`;
+    const cell = document.getElementById(cellId);
+
+    if (cell) {
+      const current = cell.innerHTML;
+      cell.innerHTML = current ? current + "<br>" + mapped.Code : mapped.Code;
+    } else {
+      document.getElementById('debug').innerText = "Mauvais Id de cellule";
+    }
+  });
+});
+</script>
+
+</body>
