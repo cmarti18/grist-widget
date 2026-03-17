@@ -1,1 +1,242 @@
 
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+
+<style>
+body{font-family:sans-serif;margin:0}
+#controls{padding:6px;background:#f4f4f4;}
+#gantt-container{overflow-x:auto;position:relative;}
+#gantt-table{border-collapse:collapse;table-layout:fixed;}
+#gantt-table td{border:1px solid #ddd;height:26px;text-align:center;vertical-align:middle;width:80px;font-size:11px; line-height:1.2;}
+.task-cell{color:white;border-radius:4px;padding:3px;font-size:11px;}
+.task-a-faire{background:green}
+.task-en-cours{background:dodgerblue}
+.task-termine{background:gray}
+.task-en-validation{background:orange}
+
+/* Jalons */
+.jalon-cell { position: relative; height: 26px; text-align: center; vertical-align: middle; }
+.jalon-cell div:last-child { width:14px; height:14px; background:#e74c3c; transform:rotate(45deg); margin:auto; margin-top:4px; }
+
+.day-label{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;}
+.weekend{background:#fafafa;}
+</style>
+</head>
+
+<body>
+<div id="controls">
+Echelle :
+<select id="scale">
+<option value="year">Année</option>
+<option value="quarter">Trimestre</option>
+<option value="month" selected>Mois</option>
+<option value="week">Semaine</option>
+<option value="day">Jour</option>
+</select>
+</div>
+
+<div id="gantt-container">
+<table id="gantt-table"></table>
+</div>
+
+<script>
+grist.ready({
+requiredAccess:'read table',
+columns:[
+{name:'task',title:'Tâche'},
+{name:'start',title:'Date début'},
+{name:'end',title:'Date Fin'},
+{name:'jalon',title:'Jalon'},
+{name:'show',title:'Affichage Gantt'},
+{name:'state',title:'Etat'}
+]
+})
+
+let scale="month"
+let currentRecords=[]
+let currentMappings={}
+
+document.getElementById("scale").onchange = e=>{
+    scale = e.target.value
+    draw(currentRecords,currentMappings)
+}
+
+function parseDate(v){
+    if(!v) return null
+    if(typeof v==="number"){ if(v<10000000000)v*=1000; return new Date(v) }
+    let d = new Date(v)
+    return isNaN(d)?null:d
+}
+
+function getWeekNumber(d){
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
+}
+
+function getMonday(d){
+    let date = new Date(d)
+    let day = date.getDay()
+    let diff = (day===0?-6:1)-day
+    date.setDate(date.getDate() + diff)
+    date.setHours(0,0,0,0)
+    return date
+}
+
+function generateUnits(min,max){
+    let units=[],current=new Date(min)
+    while(current<=max){
+        let label="",next,y=current.getFullYear(),m=current.getMonth()
+
+        if(scale==="year"){
+            label=y;
+            next=new Date(y+1,0,1);
+        }
+
+        else if(scale==="quarter"){
+            let q=Math.floor(m/3)+1;
+            label="T"+q+" "+y;
+            next=new Date(y,q*3,1);
+        }
+
+        else if(scale==="month"){
+            label=current.toLocaleString("fr-FR",{month:"long",year:"numeric"});
+            next=new Date(y,m+1,1);
+        }
+
+        else if(scale==="week"){
+            let monday = getMonday(current);
+
+            let weekNum = getWeekNumber(monday);
+            let year = monday.getFullYear();
+
+            let day = String(monday.getDate()).padStart(2,'0');
+            let month = String(monday.getMonth()+1).padStart(2,'0');
+
+            label = `S${weekNum} ${year}<br>${day}/${month}`;
+
+            next = new Date(monday);
+            next.setDate(next.getDate()+7);
+            current = monday;
+        }
+
+        else if(scale==="day"){
+            label=String(current.getDate()).padStart(2,'0')+"/"+String(m+1).padStart(2,'0')+"/"+y;
+            next=new Date(y,m,current.getDate()+1);
+        }
+
+        units.push({date:new Date(current),label})
+        current=next
+    }
+    return units
+}
+
+function findCol(units,date){
+    if(!date)return 0;
+    for(let i=0;i<units.length;i++){
+        let start=units[i].date;
+        let end=(i+1<units.length)?units[i+1].date:new Date(8640000000000000);
+        if(date>=start && date<end)return i;
+    }
+    return units.length-1;
+}
+
+function countCols(units,start,end){
+    return findCol(units,end)-findCol(units,start)+1;
+}
+
+function stateClass(state){
+    if(!state)return "task-a-faire";
+    state=state.toLowerCase();
+    if(state.includes("a faire")||state.includes("à faire"))return "task-a-faire";
+    if(state.includes("en cours"))return "task-en-cours";
+    if(state.includes("termin"))return "task-termine";
+    if(state.includes("validation"))return "task-en-validation";
+    return "task-a-faire";
+}
+
+function draw(records,mappings){
+    currentRecords = records;
+    currentMappings = mappings;
+
+    let rows = records.filter(r => r[mappings.show]||mappings.show===undefined);
+    if(rows.length===0) return
+
+    let dates = [];
+    rows.forEach(r=>{
+        let s = parseDate(r[mappings.start]), e = parseDate(r[mappings.end]);
+        if(r[mappings.jalon] === "Jalon"){
+            if(s) dates.push(s);
+        } else {
+            if(s) dates.push(s);
+            if(e) dates.push(e);
+        }
+    });
+
+    if(dates.length===0) return
+
+    let min = new Date(Math.min(...dates));
+    let max = new Date(Math.max(...dates));
+    min.setHours(0,0,0,0);
+    max.setHours(0,0,0,0);
+
+    let units = generateUnits(min,max);
+    let html=""
+
+    html += "<tr>"
+    units.forEach(u=>{
+        if(scale==="day"){
+            let d = new Date(u.date);
+            let cls = (d.getDay()===0||d.getDay()===6)?"weekend":"";
+            html += `<td class="${cls}"><div class="day-label">${u.label}</div></td>`
+        } else {
+            html += `<td>${u.label}</td>`
+        }
+    })
+    html += "</tr>"
+
+    rows.forEach(r=>{
+        html += "<tr>";
+        let s = parseDate(r[mappings.start]), e = parseDate(r[mappings.end]);
+        let isJalon = r[mappings.jalon] === "Jalon";
+
+        if(isJalon){
+            let col = findCol(units, s||e);
+            for(let i=0;i<units.length;i++){
+                if(i===col){
+                    html += `<td class="jalon-cell">
+                                ${r[mappings.task]?`<div style="font-size:10px;margin-bottom:2px;">${r[mappings.task]}</div>`:''}
+                                <div></div>
+                             </td>`;
+                } else html += "<td></td>";
+            }
+        } else {
+            let startCol = findCol(units,s);
+            let colspan = countCols(units,s,e);
+
+            for(let i=0;i<startCol;i++) html += "<td></td>";
+
+            html += `<td colspan="${colspan}">
+                        <div class="task-cell ${stateClass(r[mappings.state])}">
+                            ${r[mappings.task]}
+                        </div>
+                     </td>`;
+
+            for(let i=startCol+colspan;i<units.length;i++) html += "<td></td>";
+        }
+
+        html += "</tr>";
+    });
+
+    document.getElementById("gantt-table").innerHTML = html;
+}
+
+grist.onRecords((r,m)=>draw(r,m))
+</script>
+</body>
+</html>
