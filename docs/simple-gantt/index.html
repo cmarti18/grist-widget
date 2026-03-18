@@ -46,12 +46,12 @@ Echelle :
 grist.ready({
 requiredAccess:'read table',
 columns:[
-{name:'task',title:'Tâche'},
-{name:'start',title:'Date début'},
-{name:'end',title:'Date Fin'},
-{name:'jalon',title:'Jalon'},
-{name:'show',title:'Affichage Gantt'},
-{name:'state',title:'Etat'}
+{name:'task',title:'Nom de la tâche ou jalon'},
+{name:'start',title:'Date de début'},
+{name:'end',title:'Date de fin', description: 'Vide pour les jalons.'},
+{name:'jalon',title:'Est un Jalon', description: 'Colonne de type booléen.'},
+{name:'show',title:'Affichage Gantt', description: 'Pour afficher la ligne dans le Gantt.'},
+{name:'state',title:'Etat', optional: true, description: 'Permet de colorer les tâches. Les états doivent être nommés de "1-XXX" à "4-XXX".'}
 ]
 })
 
@@ -153,10 +153,10 @@ function countCols(units,start,end){
 function stateClass(state){
     if(!state)return "task-a-faire";
     state=state.toLowerCase();
-    if(state.includes("a faire")||state.includes("à faire"))return "task-a-faire";
-    if(state.includes("en cours"))return "task-en-cours";
-    if(state.includes("termin"))return "task-termine";
-    if(state.includes("validation"))return "task-en-validation";
+    if(state.includes("1-")||state.includes("à faire"))return "task-a-faire";
+    if(state.includes("2-"))return "task-en-cours";
+    if(state.includes("3-"))return "task-en-validation";
+    if(state.includes("4-"))return "task-termine";
     return "task-a-faire";
 }
 
@@ -170,7 +170,7 @@ function draw(records,mappings){
     let dates = [];
     rows.forEach(r=>{
         let s = parseDate(r[mappings.start]), e = parseDate(r[mappings.end]);
-        if(r[mappings.jalon] === "Jalon"){
+        if(r[mappings.jalon] === true){
             if(s) dates.push(s);
         } else {
             if(s) dates.push(s);
@@ -203,7 +203,7 @@ function draw(records,mappings){
     rows.forEach(r=>{
         html += "<tr>";
         let s = parseDate(r[mappings.start]), e = parseDate(r[mappings.end]);
-        let isJalon = r[mappings.jalon] === "Jalon";
+        let isJalon = r[mappings.jalon] === true;
 
         if(isJalon){
             let col = findCol(units, s||e);
