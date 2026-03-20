@@ -49,8 +49,7 @@ columns:[
 {name:'task',title:'Nom de la tâche ou jalon'},
 {name:'start',title:'Date de début'},
 {name:'end',title:'Date de fin', description: 'Vide pour les jalons.'},
-{name:'jalon',title:'Est un Jalon', description: 'Colonne de type booléen.'},
-{name:'show',title:'Affichage Gantt', description: 'Pour afficher la ligne dans le Gantt.'},
+{name:'jalon',title:'Est un Jalon', optional: true, description: 'Colonne de type booléen.'},
 {name:'state',title:'Etat', optional: true, description: 'Permet de colorer les tâches. Les états doivent être nommés de "1-XXX" à "4-XXX".'}
 ]
 })
@@ -159,12 +158,11 @@ function stateClass(state){
     return "task-termine";
 }
 
-
 function draw(records,mappings){
     currentRecords = records;
     currentMappings = mappings;
 
-    let rows = records.filter(r => r[mappings.show]||mappings.show===undefined);
+    let rows = records;
     if(rows.length===0) return
 
     let dates = [];
