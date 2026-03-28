@@ -191,10 +191,14 @@ function countCols(units,start,end){
 }
 
 function stateClass(state){
+    // Si pas d'etat alors "A faire"
     if(!state)return "task-a-faire";
+    // Determination de l'etat pour gestion couleurs
     state=state.toLowerCase();
+    if(state.includes("1-"))return "task-a-faire";
     if(state.includes("2-"))return "task-en-cours";
     if(state.includes("3-"))return "task-en-validation";
+    // Les autres auront la class CSS "Terminé"
     return "task-termine";
 }
 
