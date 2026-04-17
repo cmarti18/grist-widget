@@ -87,7 +87,8 @@ grist.onRecords(function(records) {
 
     if (cell) {
       const current = cell.innerHTML;
-      cell.innerHTML = current ? current + "<br>" + mapped.Code : mapped.Code;
+      // cell.innerHTML = current ? current + "<br>" + mapped.Code : mapped.Code;
+      cell.textContent = current ? current + "\n" + mapped.Code : mapped.Code;
     } else {
       document.getElementById('debug').innerText = "Mauvais Id de cellule";
     }
