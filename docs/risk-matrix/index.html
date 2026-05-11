@@ -6,11 +6,15 @@
     <title>Matrice de risques</title>
     <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
 <style>
-body {font-family: Arial, Helvetica, sans-serif;  font-weight: 500; }
-
-table, tr, th {
-  border: 1px solid black;
+body {font-family: sans-serif, Arial, Helvetica ; font-weight: 550; color: #222222;}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+table, tr, th,td {
+  border: 1px solid gray;
   text-align: center;
+  margin: 0; padding: 0;
 }
 </style>
 </head>
@@ -19,35 +23,35 @@ table, tr, th {
 <table>
   <tbody>
     <tr>
-      <td style="width:160px; background-color: lightgray;">Proba. / Impact</td>
-      <td style="width:120px; background-color: lightgray;">1- Mineur</td>
-      <td style="width:120px; background-color: lightgray;">2- Moyen</td>
-      <td style="width:120px; background-color: lightgray;">3- Important</td>
-      <td style="width:120px; background-color: lightgray;">4- Majeur</td>
+      <td style="width:160px; background-color: #DCE6F1;">Proba. / Impact</td>
+      <td style="width:120px; background-color: #DCE6F1;">1- Mineur</td>
+      <td style="width:120px; background-color: #DCE6F1;">2- Moyen</td>
+      <td style="width:120px; background-color: #DCE6F1;">3- Important</td>
+      <td style="width:120px; background-color: #DCE6F1;">4- Majeur</td>
    </tr>
    <tr style="height:30px;">
-      <td id="" style="background-color: lightgray;">Tr&egrave;s forte</td>
+      <td id="" style="background-color: #DCE6F1;">4- Tr&egrave;s forte</td>
       <td id="p4i1" style="background-color: #FEF86C;"></td>
       <td id="p4i2" style="background-color: orange;"></td>
       <td id="p4i3" style="background-color: tomato;"></td>
       <td id="p4i4" style="background-color: tomato;"></td>
     </tr>
     <tr style="height:30px;">
-      <td id="" style="background-color: lightgray;">Forte</td>
-      <td id="p3i1" style="background-color: #FEF86C  ;"></td>
+      <td id="" style="background-color: #DCE6F1;">3- Forte</td>
+      <td id="p3i1" style="background-color: #FEF86C	;"></td>
       <td id="p3i2" style="background-color: #FEF86C;"></td>
       <td id="p3i3" style="background-color: orange;"></td>
       <td id="p3i4" style="background-color: tomato;"></td>
     </tr>
     <tr style="height:30px;">
-      <td id="" style="background-color: lightgray;">Moyenne</td>
+      <td id="" style="background-color: #DCE6F1;">2- Moyenne</td>
       <td id="p2i1" style="background-color: lightgreen;"></td>
       <td id="p2i2" style="background-color: #FEF86C;"></td>
       <td id="p2i3" style="background-color: #FEF86C;"></td>
       <td id="p2i4" style="background-color: orange;"></td>
     </tr>
     <tr style="height:30px;">
-      <td id="" style="background-color: lightgray;">Faible</td>
+      <td id="" style="background-color: #DCE6F1;">1- Faible</td>
       <td id="p1i1" style="background-color: lightgreen;"></td>
       <td id="p1i2" style="background-color: lightgreen;"></td>
       <td id="p1i3" style="background-color: #FEF86C;"></td>
@@ -87,7 +91,7 @@ grist.onRecords(function(records) {
 
     if (cell) {
       const current = cell.innerHTML;
-      // cell.innerHTML = current ? current + "<br>" + mapped.Code : mapped.Code;
+      //cell.innerHTML = current ? current + "<br>" + mapped.Code : mapped.Code;
       cell.textContent = current ? current + "\n" + mapped.Code : mapped.Code;
     } else {
       document.getElementById('debug').innerText = "Mauvais Id de cellule";
