@@ -5,24 +5,14 @@
 <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
 
 <style>
-body{font-family:sans-serif;margin:0}
-#controls{padding:6px;background:#f4f4f4;}
+
+body{font-family: sans-serif, Arial, Helvetica ; font-size: 12px; font-weight: 550; color: #222222;margin:0}
+#controls{padding:2px; background:#DCE6F1; border-bottom:1px solid #c7d3e3;
+}
+#scale{color:#333; background:#EAF1F8; border:1px solid #b8c7db; border-radius:4px; padding:3px 8px; height:24px;}
 #gantt-container{overflow-x:auto;position:relative;}
-
-#gantt-table{
-    border-collapse:collapse;
-    table-layout:fixed;
-}
-
-#gantt-table td{
-    border:1px solid #ddd;
-    height:26px;
-    text-align:center;
-    vertical-align:middle;
-    width:80px;
-    font-size:11px;
-    line-height:1.2;
-}
+#gantt-table{border-collapse:collapse; table-layout:fixed;}
+#gantt-table td{border:1px solid #ddd; height:26px;text-align:center; vertical-align:middle; width:80px; font-size:11px; line-height:1.2;}
 
 .task-cell{color:white;border-radius:4px;padding:3px;font-size:11px;}
 .task-a-faire{background:green}
