@@ -12,7 +12,7 @@ body{font-family: sans-serif, Arial, Helvetica ; font-size: 12px; font-weight: 5
 #gantt-container{overflow-x:auto;position:relative;}
 #gantt-table{border-collapse:collapse; table-layout:fixed;}
 #gantt-table td{height:26px;text-align:center; vertical-align:middle; width:80px; font-size:11px; line-height:1.2;}
-#gant-table td th {border-left: 1px solid #ccc; border-right: 1px solid #ccc; border-top: none; border-bottom: none; }
+#gantt-table td th {border-left: 1px solid #ccc; border-right: 1px solid #ccc; border-top: none; border-bottom: none; }
     
 .task-cell{color:white;border-radius:4px;padding:3px;font-size:11px;}
 .task-a-faire{background:green}
@@ -200,6 +200,29 @@ function draw(records,mappings){
     max.setHours(0,0,0,0)
 
     let units=generateUnits(min,max)
+    // ===== Ajouter 1 colonne vide à droite =====
+    let last = new Date(units[units.length - 1].date)
+    if(scale === "year"){
+        last.setFullYear(last.getFullYear() + 1)
+    }
+    else if(scale === "quarter"){
+        last.setMonth(last.getMonth() + 3)
+    }
+    else if(scale === "month"){
+        last.setMonth(last.getMonth() + 1)
+    }
+    else if(scale === "week"){
+        last.setDate(last.getDate() + 7)
+    }
+    else if(scale === "day"){
+        last.setDate(last.getDate() + 1)
+    }
+    units.push({
+        date: last,
+        label: ""
+    })
+    // ===== Fin colonne vide =====
+    
     let html=""
 
     // HEADER
