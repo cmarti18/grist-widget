@@ -3,1505 +3,408 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
-
 <style>
-/* =====================================================
-   STRUCTURE GÉNÉRALE
-   ===================================================== */
-
-html {
-    height: 100%;
-}
-
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 12px;
-    font-weight: 550;
-    color: #222;
-    margin: 0;
-
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-/* =====================================================
-   BANDEAU DE COMMANDES
-   ===================================================== */
-
-#controls {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-
-    flex: 0 0 auto;
-
-    padding: 5px 6px;
-    background: #DCE6F1;
-    border-bottom: 1px solid #c7d3e3;
-}
-
-#scale {
-    color: #333;
-    background: #EAF1F8;
-    border: 1px solid #b8c7db;
-    border-radius: 4px;
-    padding: 3px 6px;
-    height: 27px;
-}
-
-.date-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-}
-
-.date-input {
-    box-sizing: border-box;
-    width: 104px;
-    height: 27px;
-    padding: 3px 5px;
-
-    border: 1px solid #b8c7db;
-    border-radius: 4px;
-
-    background: #fff;
-    color: #222;
-
-    font-family: monospace;
-    font-size: 12px;
-}
-
-#today-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-    margin-left: 4px;
-}
-
-/* Champ de date invalide */
-
-.date-input.invalid {
-    border: 2px solid #dc2626;
-    background: #fff1f2;
-    color: #991b1b;
-}
-
-/* Message d'erreur */
-
-#date-error {
-    display: none;
-    flex-basis: 100%;
-    color: #b91c1c;
-    font-weight: 600;
-    padding: 2px 0;
-}
-
-/* =====================================================
-   CONTENEUR DU GANTT
-   ===================================================== */
-
-#gantt-container {
-    position: relative;
-
-    flex: 1 1 auto;
-    min-height: 0;
-
-    overflow: auto;
-}
-
-/* =====================================================
-   TABLEAU
-   ===================================================== */
-
-#gantt-table {
-    border-collapse: collapse;
-    table-layout: fixed;
-}
-
-#gantt-table td {
-    box-sizing: border-box;
-
-    height: 26px;
-    width: 80px;
-
-    text-align: center;
-    vertical-align: middle;
-
-    font-size: 11px;
-    line-height: 1.2;
-}
-
-#gantt-table tr:first-child td {
-    border-bottom: 1px solid #DCE6F1;
-    background: #EAF1F8;
-}
-
-/* =====================================================
-   COULEURS DES TÂCHES
-   ===================================================== */
-
-.task-cell {
-    color: white;
-    border-radius: 4px;
-    padding: 3px;
-    font-size: 11px;
-
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.task-a-faire {
-    background: green;
-}
-
-.task-en-cours {
-    background: dodgerblue;
-}
-
-.task-termine {
-    background: gray;
-}
-
-.task-en-validation {
-    background: orange;
-}
-
-/* =====================================================
-   JALONS
-   ===================================================== */
-
-.jalon-cell {
-    position: relative;
-    height: 26px;
-    text-align: center;
-    vertical-align: middle;
-}
-
-.jalon-cell div:last-child {
-    width: 14px;
-    height: 14px;
-
-    background: #e74c3c;
-    transform: rotate(45deg);
-
-    margin: 4px auto 0;
-}
-
-.weekend {
-    background: #fafafa;
-}
-
-/* =====================================================
-   LIGNE AUJOURD'HUI
-   ===================================================== */
-
-.today-line {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-
-    width: 2px;
-    background: red;
-
-    pointer-events: none;
-    z-index: 10;
-}
+html, body { height:100%; }
+body { font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:550; color:#222; margin:0; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+#controls { display:flex; align-items:center; flex-wrap:wrap; gap:8px; flex:0 0 auto; padding:5px 6px; background:#DCE6F1; border-bottom:1px solid #c7d3e3; }
+#scale { color:#333; background:#EAF1F8; border:1px solid #b8c7db; border-radius:4px; padding:3px 6px; height:27px; }
+.date-label { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+.date-input { box-sizing:border-box; width:104px; height:27px; padding:3px 5px; border:1px solid #b8c7db; border-radius:4px; background:#fff; color:#222; font-family:monospace; font-size:12px; }
+#today-label { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; margin-left:4px; }
+.date-input.invalid { border:2px solid #dc2626; background:#fff1f2; color:#991b1b; }
+#date-error, #widget-error { display:none; flex-basis:100%; padding:2px 0; font-weight:600; }
+#date-error { color:#b91c1c; }
+#widget-error { color:#9a3412; }
+#gantt-container { position:relative; flex:1 1 auto; min-height:0; overflow:auto; }
+#gantt-table { border-collapse:collapse; table-layout:fixed; }
+#gantt-table td { box-sizing:border-box; height:26px; width:80px; text-align:center; vertical-align:middle; font-size:11px; line-height:1.2; }
+#gantt-table tr:first-child td { border-bottom:1px solid #DCE6F1; background:#EAF1F8; }
+.task-cell { color:white; border-radius:4px; padding:3px; font-size:11px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.task-a-faire { background:green; }
+.task-en-cours { background:dodgerblue; }
+.task-termine { background:gray; }
+.task-en-validation { background:orange; }
+.jalon-cell { position:relative; height:26px; text-align:center; vertical-align:middle; }
+.jalon-cell div:last-child { width:14px; height:14px; background:#e74c3c; transform:rotate(45deg); margin:4px auto 0; }
+.weekend { background:#fafafa; }
+.today-line { position:absolute; top:0; bottom:0; width:2px; background:red; pointer-events:none; z-index:10; }
 </style>
 </head>
-
 <body>
-
-<!-- ===================================================
-     COMMANDES
-     =================================================== -->
-
 <div id="controls">
-
-    <label for="scale">Échelle :</label>
-
-    <select id="scale">
-        <option value="year">Année</option>
-        <option value="quarter">Trimestre</option>
-        <option value="month" selected>Mois</option>
-        <option value="week">Semaine</option>
-        <option value="day">Jour</option>
-    </select>
-
-    <span class="date-label">
-        Début :
-        <input
-            type="text"
-            id="startDate"
-            class="date-input"
-            placeholder="AAAA-MM-JJ"
-            maxlength="10"
-            pattern="[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}"
-            title="Format attendu : AAAA-MM-JJ"
-            aria-label="Date de début du graphique"
-            autocomplete="off"
-        >
-    </span>
-
-    <span class="date-label">
-        Fin :
-        <input
-            type="text"
-            id="endDate"
-            class="date-input"
-            placeholder="AAAA-MM-JJ"
-            maxlength="10"
-            pattern="[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}"
-            title="Format attendu : AAAA-MM-JJ"
-            aria-label="Date de fin du graphique"
-            autocomplete="off"
-        >
-    </span>
-
-    <label id="today-label">
-        <input type="checkbox" id="todayHighlight">
-        Aujourd'hui
-    </label>
-
-    <span id="date-error" role="alert" aria-live="polite"></span>
-
+  <label for="scale">Échelle :</label>
+  <select id="scale">
+    <option value="year">Année</option><option value="quarter">Trimestre</option><option value="month" selected>Mois</option><option value="week">Semaine</option><option value="day">Jour</option>
+  </select>
+  <span class="date-label">Début : <input type="text" id="startDate" class="date-input" placeholder="AAAA-MM-JJ" maxlength="10" pattern="[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}" title="Format attendu : AAAA-MM-JJ" aria-label="Date de début du graphique" autocomplete="off"></span>
+  <span class="date-label">Fin : <input type="text" id="endDate" class="date-input" placeholder="AAAA-MM-JJ" maxlength="10" pattern="[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}" title="Format attendu : AAAA-MM-JJ" aria-label="Date de fin du graphique" autocomplete="off"></span>
+  <label id="today-label"><input type="checkbox" id="todayHighlight"> Aujourd'hui</label>
+  <span id="date-error" role="alert" aria-live="polite"></span>
+  <span id="widget-error" role="alert" aria-live="polite"></span>
 </div>
-
-<!-- ===================================================
-     GRAPHIQUE
-     =================================================== -->
-
 <div id="gantt-container">
-    <table id="gantt-table"></table>
-    <div id="today-line" class="today-line" style="display:none;"></div>
+  <table id="gantt-table"></table>
+  <div id="today-line" class="today-line" style="display:none;"></div>
 </div>
-
-
 <script>
-
-/* =====================================================
-   INITIALISATION GRIST
-   ===================================================== */
+/* ----------- Configuration et mappage Grist ----------- */
+const COLUMN_ROLES = { task:"task", start:"start", end:"end", jalon:"jalon", state:"state" };
+const FIXED_MAPPINGS = { task:"task", start:"start", end:"end", jalon:"jalon", state:"state" };
 
 grist.ready({
-    requiredAccess: "read table",
-    columns: [
-        {name: "task", title: "Nom de la tâche ou jalon"},
-        {name: "start", title: "Date de début"},
-        {name: "end", title: "Date de fin"},
-        {name: "jalon", title: "Est un Jalon", optional: true},
-        {name: "state", title: "Etat", optional: true}
-    ]
+  requiredAccess: "read table",
+  columns: [
+    { name:"task", title:"Nom de la tâche ou jalon" },
+    { name:"start", title:"Date de début" },
+    { name:"end", title:"Date de fin" },
+    { name:"jalon", title:"Est un Jalon", optional:true },
+    { name:"state", title:"Etat", optional:true }
+  ]
 });
 
-
-/* =====================================================
-   VARIABLES
-   ===================================================== */
-
 let scale = "month";
-
 let currentRecords = [];
-let currentMappings = {};
-
+let currentMappings = FIXED_MAPPINGS;
 let highlightToday = false;
-
 let rangeInitialized = false;
-
 let lastValidStartValue = "";
 let lastValidEndValue = "";
 
+/* Normalise les enregistrements à l'aide de l'API Grist si elle est disponible,
+   sinon utilise explicitement le deuxième paramètre mappings de onRecords. */
+function normalizeGristRecords(records, mappings) {
+  return (records || []).map(record => {
+    let mapped = null;
+    try {
+      if (typeof grist.mapColumnNames === "function") {
+        mapped = grist.mapColumnNames(record, { mappings: mappings || null });
+      }
+    } catch (err) {
+      console.warn("Grist mapColumnNames indisponible, utilisation du mappage manuel.", err);
+    }
 
-/* =====================================================
-   FONCTIONS GÉNÉRALES DE DATES
-   ===================================================== */
+    const normalized = {};
+    for (const role of Object.keys(COLUMN_ROLES)) {
+      if (mapped && Object.prototype.hasOwnProperty.call(mapped, role)) {
+        normalized[role] = mapped[role];
+        continue;
+      }
+      const sourceColumn = mappings && mappings[role];
+      if (typeof sourceColumn === "string" && Object.prototype.hasOwnProperty.call(record, sourceColumn)) {
+        normalized[role] = record[sourceColumn];
+      } else if (Object.prototype.hasOwnProperty.call(record, role)) {
+        normalized[role] = record[role];
+      }
+    }
+    return normalized;
+  });
+}
 
-/*
- * Renvoie une date à minuit, en heure locale.
- */
+function showWidgetError(message) {
+  const el = document.getElementById("widget-error");
+  el.textContent = message || "";
+  el.style.display = message ? "block" : "none";
+}
+function clearWidgetError() { showWidgetError(""); }
+
 function startOfDay(date) {
-    if (!date) return null;
-
-    const result = new Date(date);
-
-    result.setHours(0, 0, 0, 0);
-
-    return result;
+  if (!date) return null;
+  const result = new Date(date);
+  result.setHours(0,0,0,0);
+  return result;
 }
-
-
-/*
- * Formate une date en AAAA-MM-JJ.
- */
 function formatDateInput(date) {
-    if (!date || isNaN(date.getTime())) {
-        return "";
-    }
-
-    const year = date.getFullYear();
-
-    const month = String(
-        date.getMonth() + 1
-    ).padStart(2, "0");
-
-    const day = String(
-        date.getDate()
-    ).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+  if (!date || isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth()+1).padStart(2,"0");
+  const day = String(date.getDate()).padStart(2,"0");
+  return `${year}-${month}-${day}`;
 }
-
-
-/*
- * Vérifie une date saisie manuellement.
- *
- * Formats acceptés :
- * AAAA-MM-JJ
- * AAAA-M-J
- * AAAA-MM-J
- * AAAA-M-JJ
- *
- * Renvoie une date normalisée AAAA-MM-JJ.
- * Renvoie null si le format ou la date est invalide.
- */
 function normalizeDateInput(value) {
-    if (!value) return null;
-
-    const match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(
-        String(value).trim()
-    );
-
-    if (!match) return null;
-
-    const year = Number(match[1]);
-    const month = Number(match[2]);
-    const day = Number(match[3]);
-
-    const date = new Date(0);
-
-    date.setHours(0, 0, 0, 0);
-
-    date.setFullYear(year, month - 1, day);
-
-    date.setHours(0, 0, 0, 0);
-
-    /*
-     * Vérifier que JavaScript n'a pas transformé
-     * une date impossible en une autre date.
-     */
-    if (
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
-    ) {
-        return null;
-    }
-
-    const normalizedYear = String(year).padStart(4, "0");
-
-    const normalizedMonth = String(month).padStart(2, "0");
-
-    const normalizedDay = String(day).padStart(2, "0");
-
-    return `${normalizedYear}-${normalizedMonth}-${normalizedDay}`;
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(value).trim());
+  if (!match) return null;
+  const year = Number(match[1]), month = Number(match[2]), day = Number(match[3]);
+  const date = new Date(0);
+  date.setHours(0,0,0,0);
+  date.setFullYear(year, month-1, day);
+  date.setHours(0,0,0,0);
+  if (date.getFullYear() !== year || date.getMonth() !== month-1 || date.getDate() !== day) return null;
+  return `${String(year).padStart(4,"0")}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
 }
-
-
-/*
- * Convertit une saisie valide en objet Date.
- */
 function parseInputDate(value) {
-    const normalized = normalizeDateInput(value);
-
-    if (!normalized) return null;
-
-    const parts = normalized.split("-").map(Number);
-
-    const year = parts[0];
-    const month = parts[1];
-    const day = parts[2];
-
-    const date = new Date(0);
-
-    date.setHours(0, 0, 0, 0);
-
-    date.setFullYear(year, month - 1, day);
-
-    date.setHours(0, 0, 0, 0);
-
-    return date;
+  const normalized = normalizeDateInput(value);
+  if (!normalized) return null;
+  const [year,month,day] = normalized.split("-").map(Number);
+  const date = new Date(0);
+  date.setHours(0,0,0,0);
+  date.setFullYear(year,month-1,day);
+  date.setHours(0,0,0,0);
+  return date;
 }
-
-
-/*
- * Analyse les dates provenant des données Grist.
- */
 function parseDate(value) {
-    if (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) {
-        return null;
-    }
-
-    if (value instanceof Date) {
-        return isNaN(value.getTime())
-            ? null
-            : new Date(value);
-    }
-
-    if (typeof value === "number") {
-        /*
-         * Conversion des timestamps.
-         * Les valeurs inférieures à 10 milliards
-         * sont interprétées comme des secondes.
-         */
-        const timestamp = value < 10000000000
-            ? value * 1000
-            : value;
-
-        const date = new Date(timestamp);
-
-        return isNaN(date.getTime())
-            ? null
-            : date;
-    }
-
-    if (typeof value === "string") {
-        const text = value.trim();
-
-        /*
-         * Une date sans heure est interprétée
-         * en heure locale.
-         */
-        if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-            return parseInputDate(text);
-        }
-
-        const date = new Date(text);
-
-        return isNaN(date.getTime())
-            ? null
-            : date;
-    }
-
-    return null;
+  if (value === null || value === undefined || value === "") return null;
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : new Date(value);
+  if (typeof value === "number") {
+    const timestamp = value < 10000000000 ? value*1000 : value;
+    const date = new Date(timestamp);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  if (typeof value === "string") {
+    const text = value.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return parseInputDate(text);
+    const date = new Date(text);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  return null;
 }
-
-
-/* =====================================================
-   COLLECTE DES DATES DES TÂCHES
-   ===================================================== */
-
-function collectTaskDates(records, mappings) {
-    const dates = [];
-
-    records.forEach(record => {
-        const start = parseDate(record[mappings.start]);
-        const end = parseDate(record[mappings.end]);
-
-        const isJalon = mappings.jalon
-            ? Boolean(record[mappings.jalon])
-            : false;
-
-        if (isJalon) {
-            const milestoneDate = start || end;
-
-            if (milestoneDate) {
-                dates.push(startOfDay(milestoneDate));
-            }
-        } else {
-            if (start) {
-                dates.push(startOfDay(start));
-            }
-
-            if (end) {
-                dates.push(startOfDay(end));
-            }
-        }
-    });
-
-    return dates;
+function collectTaskDates(records) {
+  const dates = [];
+  records.forEach(record => {
+    const start = parseDate(record.start), end = parseDate(record.end);
+    if (record.jalon) {
+      const d = start || end;
+      if (d) dates.push(startOfDay(d));
+    } else {
+      if (start) dates.push(startOfDay(start));
+      if (end) dates.push(startOfDay(end));
+    }
+  });
+  return dates;
 }
-
-
-/*
- * Initialisation de la période à partir des tâches.
- * Elle n'est réalisée qu'une seule fois pour préserver
- * les modifications manuelles ultérieures.
- */
-function initializeDateRange(records, mappings) {
-    if (rangeInitialized) return;
-
-    const dates = collectTaskDates(records, mappings);
-
-    if (dates.length === 0) return;
-
-    const minDate = new Date(Math.min(...dates));
-    const maxDate = new Date(Math.max(...dates));
-
-    const startInput = document.getElementById("startDate");
-    const endInput = document.getElementById("endDate");
-
-    startInput.value = formatDateInput(minDate);
-    endInput.value = formatDateInput(maxDate);
-
-    lastValidStartValue = startInput.value;
-    lastValidEndValue = endInput.value;
-
-    rangeInitialized = true;
+function initializeDateRange(records) {
+  if (rangeInitialized) return;
+  const dates = collectTaskDates(records);
+  if (!dates.length) return;
+  const start = new Date(Math.min(...dates)), end = new Date(Math.max(...dates));
+  document.getElementById("startDate").value = formatDateInput(start);
+  document.getElementById("endDate").value = formatDateInput(end);
+  lastValidStartValue = formatDateInput(start);
+  lastValidEndValue = formatDateInput(end);
+  rangeInitialized = true;
 }
-
-
-/* =====================================================
-   GESTION DE LA PÉRIODE ET D'AUJOURD'HUI
-   ===================================================== */
-
-/*
- * Lorsque Aujourd'hui est coché :
- *
- * - si aujourd'hui précède le début, le début recule ;
- * - si aujourd'hui dépasse la fin, la fin avance ;
- * - si aujourd'hui est déjà dans la période, rien ne change.
- */
 function ensureTodayInRange() {
-    const startInput = document.getElementById("startDate");
-    const endInput = document.getElementById("endDate");
-
-    let start = parseInputDate(startInput.value);
-    let end = parseInputDate(endInput.value);
-
-    if (!start || !end) return;
-
-    const today = startOfDay(new Date());
-
-    if (today < start) {
-        startInput.value = formatDateInput(today);
-        start = today;
-    }
-
-    if (today > end) {
-        endInput.value = formatDateInput(today);
-        end = today;
-    }
-
-    /*
-     * Sécurité : la période ne peut pas être inversée.
-     */
-    if (start > end) {
-        endInput.value = startInput.value;
-    }
-
-    lastValidStartValue = startInput.value;
-    lastValidEndValue = endInput.value;
+  const startInput = document.getElementById("startDate"), endInput = document.getElementById("endDate");
+  let start = parseInputDate(startInput.value), end = parseInputDate(endInput.value);
+  if (!start || !end) return;
+  const today = startOfDay(new Date());
+  if (today < start) { startInput.value = formatDateInput(today); start = today; }
+  if (today > end) { endInput.value = formatDateInput(today); end = today; }
+  if (start > end) endInput.value = startInput.value;
+  lastValidStartValue = startInput.value;
+  lastValidEndValue = endInput.value;
 }
-
-
-/* =====================================================
-   MESSAGES ET VALIDATION DES CHAMPS
-   ===================================================== */
-
 function showDateError(input, message) {
-    input.classList.add("invalid");
-    input.setAttribute("aria-invalid", "true");
-
-    const error = document.getElementById("date-error");
-
-    error.textContent = message;
-    error.style.display = "block";
+  input.classList.add("invalid");
+  input.setAttribute("aria-invalid","true");
+  const error = document.getElementById("date-error");
+  error.textContent = message;
+  error.style.display = "block";
 }
-
-
 function clearDateError() {
-    const startInput = document.getElementById("startDate");
-    const endInput = document.getElementById("endDate");
-
-    [startInput, endInput].forEach(input => {
-        input.classList.remove("invalid");
-        input.removeAttribute("aria-invalid");
-    });
-
-    const error = document.getElementById("date-error");
-
+  for (const id of ["startDate","endDate"]) {
+    const input = document.getElementById(id);
+    input.classList.remove("invalid");
+    input.removeAttribute("aria-invalid");
+  }
+  const error = document.getElementById("date-error");
+  error.textContent = "";
+  error.style.display = "none";
+}
+function validateDateFieldLive(input) {
+  const value = input.value.trim();
+  if (!value) { input.classList.remove("invalid"); input.removeAttribute("aria-invalid"); }
+  else if (!normalizeDateInput(value)) { input.classList.add("invalid"); input.setAttribute("aria-invalid","true"); }
+  else { input.classList.remove("invalid"); input.removeAttribute("aria-invalid"); }
+  const startValue = document.getElementById("startDate").value.trim();
+  const endValue = document.getElementById("endDate").value.trim();
+  const startInvalid = startValue !== "" && !normalizeDateInput(startValue);
+  const endInvalid = endValue !== "" && !normalizeDateInput(endValue);
+  const error = document.getElementById("date-error");
+  if (startInvalid) {
+    error.textContent = "Date de début invalide. Format attendu : AAAA-MM-JJ, par exemple 2026-11-05.";
+    error.style.display = "block";
+  } else if (endInvalid) {
+    error.textContent = "Date de fin invalide. Format attendu : AAAA-MM-JJ, par exemple 2026-11-05.";
+    error.style.display = "block";
+  } else {
     error.textContent = "";
     error.style.display = "none";
+  }
 }
-
-
-/*
- * Validation en temps réel.
- *
- * Un champ non vide devient rouge si le format
- * ou la date est incorrect.
- */
-function validateDateFieldLive(input) {
-    const value = input.value.trim();
-
-    if (!value) {
-        input.classList.remove("invalid");
-        input.removeAttribute("aria-invalid");
-    } else if (!normalizeDateInput(value)) {
-        input.classList.add("invalid");
-        input.setAttribute("aria-invalid", "true");
-    } else {
-        input.classList.remove("invalid");
-        input.removeAttribute("aria-invalid");
-    }
-
-    const startInput = document.getElementById("startDate");
-    const endInput = document.getElementById("endDate");
-
-    const startValue = startInput.value.trim();
-    const endValue = endInput.value.trim();
-
-    const startInvalid =
-        startValue !== "" &&
-        normalizeDateInput(startValue) === null;
-
-    const endInvalid =
-        endValue !== "" &&
-        normalizeDateInput(endValue) === null;
-
-    const error = document.getElementById("date-error");
-
-    if (startInvalid) {
-        error.textContent =
-            "Date de début invalide. Format attendu : AAAA-MM-JJ, par exemple 2026-11-05.";
-
-        error.style.display = "block";
-    } else if (endInvalid) {
-        error.textContent =
-            "Date de fin invalide. Format attendu : AAAA-MM-JJ, par exemple 2026-11-05.";
-
-        error.style.display = "block";
-    } else {
-        error.textContent = "";
-        error.style.display = "none";
-    }
-}
-
-
-/*
- * Vérification complète lors de la validation d'un champ.
- */
 function handleDateRangeChange(changedField) {
-    const startInput = document.getElementById("startDate");
-    const endInput = document.getElementById("endDate");
-
-    /*
-     * Normaliser automatiquement les deux saisies.
-     *
-     * Exemple :
-     * 2026-11-5 devient 2026-11-05.
-     */
-    const normalizedStart = normalizeDateInput(startInput.value);
-    const normalizedEnd = normalizeDateInput(endInput.value);
-
-    if (normalizedStart) {
-        startInput.value = normalizedStart;
-    }
-
-    if (normalizedEnd) {
-        endInput.value = normalizedEnd;
-    }
-
-    let start = parseInputDate(startInput.value);
-    let end = parseInputDate(endInput.value);
-
-    const errorMessage =
-        "Date invalide. Utilise AAAA-MM-JJ, par exemple 2026-11-05.";
-
-    if (!start) {
-        showDateError(startInput, errorMessage);
-        return;
-    }
-
-    if (!end) {
-        showDateError(endInput, errorMessage);
-        return;
-    }
-
-    clearDateError();
-
-    /*
-     * Si les bornes sont inversées, ajuster la borne
-     * opposée pour garder une période valide.
-     */
-    if (start > end) {
-        if (changedField === "start") {
-            endInput.value = startInput.value;
-        } else {
-            startInput.value = endInput.value;
-        }
-    }
-
-    /*
-     * Si Aujourd'hui est coché, la période doit
-     * nécessairement couvrir la date du jour.
-     */
-    if (highlightToday) {
-        ensureTodayInRange();
-    }
-
-    start = parseInputDate(startInput.value);
-    end = parseInputDate(endInput.value);
-
-    if (!start || !end || start > end) {
-        showDateError(
-            endInput,
-            "La période sélectionnée est invalide."
-        );
-
-        return;
-    }
-
-    lastValidStartValue = startInput.value;
-    lastValidEndValue = endInput.value;
-
-    clearDateError();
-
-    draw(currentRecords, currentMappings);
+  const startInput = document.getElementById("startDate"), endInput = document.getElementById("endDate");
+  const normalizedStart = normalizeDateInput(startInput.value), normalizedEnd = normalizeDateInput(endInput.value);
+  if (normalizedStart) startInput.value = normalizedStart;
+  if (normalizedEnd) endInput.value = normalizedEnd;
+  let start = parseInputDate(startInput.value), end = parseInputDate(endInput.value);
+  const errorMessage = "Date invalide. Utilise AAAA-MM-JJ, par exemple 2026-11-05.";
+  if (!start) { showDateError(startInput,errorMessage); return; }
+  if (!end) { showDateError(endInput,errorMessage); return; }
+  clearDateError();
+  if (start > end) {
+    if (changedField === "start") endInput.value = startInput.value;
+    else startInput.value = endInput.value;
+  }
+  if (highlightToday) ensureTodayInRange();
+  start = parseInputDate(startInput.value); end = parseInputDate(endInput.value);
+  if (!start || !end || start > end) { showDateError(endInput,"La période sélectionnée est invalide."); return; }
+  lastValidStartValue = startInput.value; lastValidEndValue = endInput.value;
+  clearDateError();
+  draw(currentRecords,FIXED_MAPPINGS);
 }
 
+document.getElementById("scale").addEventListener("change", e => { scale=e.target.value; draw(currentRecords,FIXED_MAPPINGS); });
+document.getElementById("todayHighlight").addEventListener("change", e => { highlightToday=e.target.checked; if (highlightToday) ensureTodayInRange(); draw(currentRecords,FIXED_MAPPINGS); });
+document.getElementById("startDate").addEventListener("input", function(){ validateDateFieldLive(this); });
+document.getElementById("endDate").addEventListener("input", function(){ validateDateFieldLive(this); });
+document.getElementById("startDate").addEventListener("change", () => handleDateRangeChange("start"));
+document.getElementById("endDate").addEventListener("change", () => handleDateRangeChange("end"));
 
-/* =====================================================
-   ÉCOUTEURS DES CONTRÔLES
-   ===================================================== */
-
-document.getElementById("scale").addEventListener("change", event => {
-    scale = event.target.value;
-
-    draw(currentRecords, currentMappings);
-});
-
-
-document.getElementById("todayHighlight").addEventListener(
-    "change",
-    event => {
-        highlightToday = event.target.checked;
-
-        if (highlightToday) {
-            ensureTodayInRange();
-        }
-
-        draw(currentRecords, currentMappings);
-    }
-);
-
-
-document.getElementById("startDate").addEventListener(
-    "input",
-    function () {
-        validateDateFieldLive(this);
-    }
-);
-
-
-document.getElementById("endDate").addEventListener(
-    "input",
-    function () {
-        validateDateFieldLive(this);
-    }
-);
-
-
-document.getElementById("startDate").addEventListener("change", () => {
-    handleDateRangeChange("start");
-});
-
-
-document.getElementById("endDate").addEventListener("change", () => {
-    handleDateRangeChange("end");
-});
-
-
-/* =====================================================
-   CALCUL DES UNITÉS TEMPORELLES
-   ===================================================== */
-
-/*
- * Retourne le lundi de la semaine contenant la date.
- */
 function getMonday(date) {
-    const result = new Date(date);
-
-    const day = result.getDay();
-
-    const diff = (day === 0 ? -6 : 1) - day;
-
-    result.setDate(result.getDate() + diff);
-
-    result.setHours(0, 0, 0, 0);
-
-    return result;
+  const result = new Date(date), day = result.getDay();
+  result.setDate(result.getDate() + ((day===0 ? -6 : 1)-day));
+  result.setHours(0,0,0,0);
+  return result;
 }
-
-
-/*
- * Calcule le numéro de semaine ISO.
- */
 function getWeekNumber(date) {
-    const d = new Date(Date.UTC(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
-    ));
-
-    const dayNum = d.getUTCDay() || 7;
-
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-
-    const yearStart = new Date(
-        Date.UTC(d.getUTCFullYear(), 0, 1)
-    );
-
-    return Math.ceil(
-        (((d - yearStart) / 86400000) + 1) / 7
-    );
+  const d = new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate()+4-dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d-yearStart)/86400000)+1)/7);
 }
-
-
-/*
- * Aligne une date sur le début de son unité.
- */
 function alignToUnit(date) {
-    const d = startOfDay(date);
-
-    if (scale === "year") {
-        return new Date(d.getFullYear(), 0, 1);
-    }
-
-    if (scale === "quarter") {
-        const quarterMonth =
-            Math.floor(d.getMonth() / 3) * 3;
-
-        return new Date(
-            d.getFullYear(),
-            quarterMonth,
-            1
-        );
-    }
-
-    if (scale === "month") {
-        return new Date(
-            d.getFullYear(),
-            d.getMonth(),
-            1
-        );
-    }
-
-    if (scale === "week") {
-        return getMonday(d);
-    }
-
-    return d;
+  const d = startOfDay(date);
+  if (scale === "year") return new Date(d.getFullYear(),0,1);
+  if (scale === "quarter") return new Date(d.getFullYear(),Math.floor(d.getMonth()/3)*3,1);
+  if (scale === "month") return new Date(d.getFullYear(),d.getMonth(),1);
+  if (scale === "week") return getMonday(d);
+  return d;
 }
-
-
-/*
- * Calcule le début de l'unité suivante.
- */
 function nextUnitDate(date) {
-    const d = new Date(date);
-
-    d.setHours(0, 0, 0, 0);
-
-    if (scale === "year") {
-        return new Date(d.getFullYear() + 1, 0, 1);
-    }
-
-    if (scale === "quarter") {
-        const quarterMonth =
-            Math.floor(d.getMonth() / 3) * 3;
-
-        return new Date(
-            d.getFullYear(),
-            quarterMonth + 3,
-            1
-        );
-    }
-
-    if (scale === "month") {
-        return new Date(
-            d.getFullYear(),
-            d.getMonth() + 1,
-            1
-        );
-    }
-
-    if (scale === "week") {
-        d.setDate(d.getDate() + 7);
-
-        return d;
-    }
-
-    d.setDate(d.getDate() + 1);
-
-    return d;
+  const d = new Date(date); d.setHours(0,0,0,0);
+  if (scale === "year") return new Date(d.getFullYear()+1,0,1);
+  if (scale === "quarter") return new Date(d.getFullYear(),Math.floor(d.getMonth()/3)*3+3,1);
+  if (scale === "month") return new Date(d.getFullYear(),d.getMonth()+1,1);
+  if (scale === "week") { d.setDate(d.getDate()+7); return d; }
+  d.setDate(d.getDate()+1); return d;
 }
-
-
-/*
- * Génère les colonnes de la période sélectionnée.
- */
-function generateUnits(min, max) {
-    const units = [];
-
-    let current = alignToUnit(min);
-
-    const last = alignToUnit(max);
-
-    while (current <= last) {
-        const year = current.getFullYear();
-        const month = current.getMonth();
-
-        let label = "";
-
-        if (scale === "year") {
-            label = String(year);
-        }
-
-        else if (scale === "quarter") {
-            const quarter = Math.floor(month / 3) + 1;
-
-            label = `T${quarter} ${year}`;
-        }
-
-        else if (scale === "month") {
-            label = current.toLocaleString("fr-FR", {
-                month: "short",
-                year: "numeric"
-            });
-        }
-
-        else if (scale === "week") {
-            const weekNum = getWeekNumber(current);
-
-            const day = String(
-                current.getDate()
-            ).padStart(2, "0");
-
-            const monthText = String(
-                current.getMonth() + 1
-            ).padStart(2, "0");
-
-            label = `S${weekNum}<br>${day}/${monthText}`;
-        }
-
-        else if (scale === "day") {
-            const shortYear = String(year).slice(-2);
-
-            const day = String(
-                current.getDate()
-            ).padStart(2, "0");
-
-            const monthText = String(
-                month + 1
-            ).padStart(2, "0");
-
-            label = `&nbsp;${day}/${monthText}/${shortYear}&nbsp;`;
-        }
-
-        units.push({
-            date: new Date(current),
-            label: label
-        });
-
-        current = nextUnitDate(current);
-    }
-
-    return units;
+function generateUnits(min,max) {
+  const units=[]; let current=alignToUnit(min); const last=alignToUnit(max);
+  while (current<=last) {
+    const year=current.getFullYear(), month=current.getMonth(); let label="";
+    if (scale === "year") label=String(year);
+    else if (scale === "quarter") label=`T${Math.floor(month/3)+1} ${year}`;
+    else if (scale === "month") label=current.toLocaleString("fr-FR",{month:"short",year:"numeric"});
+    else if (scale === "week") label=`S${getWeekNumber(current)}<br>${String(current.getDate()).padStart(2,"0")}/${String(month+1).padStart(2,"0")}`;
+    else label=`&nbsp;${String(current.getDate()).padStart(2,"0")}/${String(month+1).padStart(2,"0")}/${String(year).slice(-2)}&nbsp;`;
+    units.push({date:new Date(current),label}); current=nextUnitDate(current);
+  }
+  return units;
 }
-
-
-/*
- * Recherche la colonne correspondant à une date.
- *
- * Retourne -1 si la date est avant le graphique.
- * Retourne units.length si elle est après le graphique.
- *
- * On ne renvoie plus systématiquement la dernière colonne.
- */
-function findCol(units, date) {
-    if (!date || units.length === 0) {
-        return -1;
-    }
-
-    for (let i = 0; i < units.length; i++) {
-        const start = units[i].date;
-
-        const end = nextUnitDate(start);
-
-        if (date >= start && date < end) {
-            return i;
-        }
-    }
-
-    if (date < units[0].date) {
-        return -1;
-    }
-
-    return units.length;
+function findCol(units,date) {
+  if (!date || !units.length) return -1;
+  for (let i=0;i<units.length;i++) if (date>=units[i].date && date<nextUnitDate(units[i].date)) return i;
+  return date<units[0].date ? -1 : units.length;
 }
-
-
-/*
- * Convertit une date en numéro de jour UTC.
- * Cela permet d'éviter les erreurs liées au changement d'heure.
- */
-function dateOrdinal(date) {
-    return Date.UTC(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
-    );
-}
-
-
-/* =====================================================
-   AFFICHAGE DES TÂCHES
-   ===================================================== */
-
-/*
- * Échappe le texte issu des données Grist.
- */
+function dateOrdinal(date) { return Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()); }
 function escapeHtml(value) {
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+  return String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
-
-
-/*
- * Détermine la couleur de la tâche selon son état.
- */
 function stateClass(state) {
-    if (!state) {
-        return "task-a-faire";
-    }
-
-    state = String(state).toLowerCase();
-
-    if (state.includes("1-")) {
-        return "task-a-faire";
-    }
-
-    if (state.includes("2-")) {
-        return "task-en-cours";
-    }
-
-    if (state.includes("3-")) {
-        return "task-en-validation";
-    }
-
-    return "task-termine";
+  if (!state) return "task-a-faire";
+  state=String(state).toLowerCase();
+  if (state.includes("1-")) return "task-a-faire";
+  if (state.includes("2-")) return "task-en-cours";
+  if (state.includes("3-")) return "task-en-validation";
+  return "task-termine";
 }
+function emptyCells(count) { return "<td></td>".repeat(Math.max(0,count)); }
 
-
-/*
- * Génère des cellules vides.
- */
-function emptyCells(count) {
-    return "<td></td>".repeat(Math.max(0, count));
-}
-
-
-/* =====================================================
-   DESSIN DU GANTT
-   ===================================================== */
-
-function draw(records, mappings) {
-    currentRecords = records || [];
-
-    currentMappings = mappings || {};
-
-    const table = document.getElementById("gantt-table");
-
-    const line = document.getElementById("today-line");
-
-    const container = document.getElementById("gantt-container");
-
-    /*
-     * Aucune donnée à afficher.
-     */
-    if (!currentRecords.length) {
-        table.innerHTML = "";
-
-        line.style.display = "none";
-
-        return;
-    }
-
-    /*
-     * Initialisation des champs de dates.
-     */
-    initializeDateRange(currentRecords, currentMappings);
-
-    if (!rangeInitialized) {
-        table.innerHTML = "";
-
-        line.style.display = "none";
-
-        return;
-    }
-
-    /*
-     * Inclure aujourd'hui dans la période si nécessaire.
-     */
-    if (highlightToday) {
-        ensureTodayInRange();
-    }
-
-    const startInput = document.getElementById("startDate");
-
-    const endInput = document.getElementById("endDate");
-
-    const rangeStart = parseInputDate(startInput.value);
-
-    const rangeEnd = parseInputDate(endInput.value);
-
-    if (
-        !rangeStart ||
-        !rangeEnd ||
-        rangeStart > rangeEnd
-    ) {
-        table.innerHTML = "";
-
-        line.style.display = "none";
-
-        return;
-    }
-
-    /*
-     * Construire les unités temporelles.
-     */
-    const min = alignToUnit(rangeStart);
-
-    const max = alignToUnit(rangeEnd);
-
-    const units = generateUnits(min, max);
-
-    if (!units.length) {
-        table.innerHTML = "";
-
-        line.style.display = "none";
-
-        return;
-    }
-
-    const visibleStart = units[0].date;
-
-    const visibleEnd = nextUnitDate(
-        units[units.length - 1].date
-    );
-
-    let html = "";
-
-    /* -------------------------------------------------
-       EN-TÊTE DU GANTT
-       ------------------------------------------------- */
-
+function draw(records,mappings) {
+  currentRecords=records || []; currentMappings=FIXED_MAPPINGS;
+  const table=document.getElementById("gantt-table"), line=document.getElementById("today-line"), container=document.getElementById("gantt-container");
+  if (!currentRecords.length) { table.innerHTML=""; line.style.display="none"; return; }
+  initializeDateRange(currentRecords);
+  if (!rangeInitialized) { table.innerHTML=""; line.style.display="none"; return; }
+  if (highlightToday) ensureTodayInRange();
+  const rangeStart=parseInputDate(document.getElementById("startDate").value), rangeEnd=parseInputDate(document.getElementById("endDate").value);
+  if (!rangeStart || !rangeEnd || rangeStart>rangeEnd) { table.innerHTML=""; line.style.display="none"; return; }
+  const units=generateUnits(alignToUnit(rangeStart),alignToUnit(rangeEnd));
+  if (!units.length) { table.innerHTML=""; line.style.display="none"; return; }
+  const visibleStart=units[0].date, visibleEnd=nextUnitDate(units[units.length-1].date);
+  let html="<tr>";
+  units.forEach(unit => { html += `<td>${unit.label}</td>`; });
+  html += "</tr>";
+  currentRecords.forEach(record => {
     html += "<tr>";
-
-    units.forEach(unit => {
-        html += `<td>${unit.label}</td>`;
-    });
-
-    html += "</tr>";
-
-
-    /* -------------------------------------------------
-       TÂCHES ET JALONS
-       ------------------------------------------------- */
-
-    currentRecords.forEach(record => {
-        html += "<tr>";
-
-        const start = parseDate(
-            record[currentMappings.start]
-        );
-
-        const end = parseDate(
-            record[currentMappings.end]
-        );
-
-        const taskName = escapeHtml(
-            record[currentMappings.task]
-        );
-
-        const isJalon = currentMappings.jalon
-            ? Boolean(record[currentMappings.jalon])
-            : false;
-
-
-        /* ---------------------------------------------
-           JALON
-           --------------------------------------------- */
-
-        if (isJalon) {
-            const milestoneDate = start || end;
-
-            const col = findCol(units, milestoneDate);
-
-            if (col < 0 || col >= units.length) {
-                html += emptyCells(units.length);
-            } else {
-                html += emptyCells(col);
-
-                html += `
-                    <td class="jalon-cell">
-                        <div>${taskName}</div>
-                        <div></div>
-                    </td>
-                `;
-
-                html += emptyCells(
-                    units.length - col - 1
-                );
-            }
-
-            html += "</tr>";
-
-            return;
-        }
-
-
-        /* ---------------------------------------------
-           TÂCHE
-           --------------------------------------------- */
-
-        let taskStart = start || end;
-
-        let taskEnd = end || start;
-
-        if (!taskStart || !taskEnd) {
-            html += emptyCells(units.length);
-
-            html += "</tr>";
-
-            return;
-        }
-
-        taskStart = startOfDay(taskStart);
-
-        taskEnd = startOfDay(taskEnd);
-
-        /*
-         * Corriger une éventuelle inversion des dates.
-         */
-        if (taskEnd < taskStart) {
-            const temp = taskStart;
-
-            taskStart = taskEnd;
-
-            taskEnd = temp;
-        }
-
-        /*
-         * Tâche totalement hors de la période visible.
-         */
-        if (
-            taskEnd < visibleStart ||
-            taskStart >= visibleEnd
-        ) {
-            html += emptyCells(units.length);
-
-            html += "</tr>";
-
-            return;
-        }
-
-        /*
-         * Déterminer la première colonne visible.
-         */
-        let startCol;
-
-        if (taskStart <= visibleStart) {
-            startCol = 0;
-        } else {
-            startCol = findCol(units, taskStart);
-        }
-
-        /*
-         * Déterminer la dernière colonne visible.
-         */
-        let endCol;
-
-        if (taskEnd >= visibleEnd) {
-            endCol = units.length - 1;
-        } else {
-            endCol = findCol(units, taskEnd);
-        }
-
-        startCol = Math.max(
-            0,
-            Math.min(units.length - 1, startCol)
-        );
-
-        endCol = Math.max(
-            0,
-            Math.min(units.length - 1, endCol)
-        );
-
-        if (
-            startCol < 0 ||
-            endCol < startCol
-        ) {
-            html += emptyCells(units.length);
-
-            html += "</tr>";
-
-            return;
-        }
-
-        const colspan = endCol - startCol + 1;
-
-        html += emptyCells(startCol);
-
-        html += `
-            <td colspan="${colspan}">
-                <div class="task-cell ${stateClass(record[currentMappings.state])}">
-                    ${taskName}
-                </div>
-            </td>
-        `;
-
-        html += emptyCells(
-            units.length - endCol - 1
-        );
-
-        html += "</tr>";
-    });
-
-
-    /* -------------------------------------------------
-       AFFICHAGE DU TABLEAU
-       ------------------------------------------------- */
-
-    table.innerHTML = html;
-
-
-    /* -------------------------------------------------
-       LIGNE AUJOURD'HUI
-       ------------------------------------------------- */
-
-    if (!highlightToday) {
-        line.style.display = "none";
-
-        return;
+    const start=parseDate(record.start), end=parseDate(record.end), taskName=escapeHtml(record.task), isJalon=Boolean(record.jalon);
+    if (isJalon) {
+      const col=findCol(units,start || end);
+      if (col<0 || col>=units.length) html += emptyCells(units.length);
+      else {
+        html += emptyCells(col);
+        html += `<td class="jalon-cell"><div>${taskName}</div><div></div></td>`;
+        html += emptyCells(units.length-col-1);
+      }
+      html += "</tr>"; return;
     }
-
-    const today = startOfDay(new Date());
-
-    /*
-     * Chercher la colonne du jour.
-     */
-    const col = findCol(units, today);
-
-    /*
-     * Sécurité : si la date ne correspond à aucune
-     * colonne, ne pas placer la ligne à droite par défaut.
-     */
-    if (col < 0 || col >= units.length) {
-        line.style.display = "none";
-
-        return;
-    }
-
-    const cell = table.rows[0]?.cells[col];
-
-    if (!cell) {
-        line.style.display = "none";
-
-        return;
-    }
-
-    /*
-     * Calcul de la position dans la colonne.
-     */
-    let ratio;
-
-    if (scale === "day") {
-        /*
-         * À l'échelle Jour, ligne centrée.
-         */
-        ratio = 0.5;
-    } else {
-        const unitStart = units[col].date;
-
-        const unitEnd = nextUnitDate(unitStart);
-
-        const numerator =
-            dateOrdinal(today) -
-            dateOrdinal(unitStart);
-
-        const denominator =
-            dateOrdinal(unitEnd) -
-            dateOrdinal(unitStart);
-
-        ratio = denominator > 0
-            ? numerator / denominator
-            : 0;
-    }
-
-    ratio = Math.max(
-        0,
-        Math.min(1, ratio)
-    );
-
-    /*
-     * Position horizontale de la ligne.
-     */
-    const cellRect = cell.getBoundingClientRect();
-
-    const containerRect = container.getBoundingClientRect();
-
-    const left =
-        cellRect.left -
-        containerRect.left +
-        container.scrollLeft +
-        ratio * cellRect.width;
-
-    line.style.left = `${left}px`;
-
-    /*
-     * La ligne traverse la hauteur du graphique.
-     */
-    line.style.height = "";
-    line.style.bottom = "";
-
-    line.style.display = "block";
-
-    /*
-     * Défilement automatique vers aujourd'hui.
-     */
-    container.scrollLeft = Math.max(
-        0,
-        left - 200
-    );
+    let taskStart=start || end, taskEnd=end || start;
+    if (!taskStart || !taskEnd) { html += emptyCells(units.length)+"</tr>"; return; }
+    taskStart=startOfDay(taskStart); taskEnd=startOfDay(taskEnd);
+    if (taskEnd<taskStart) [taskStart,taskEnd]=[taskEnd,taskStart];
+    if (taskEnd<visibleStart || taskStart>=visibleEnd) { html += emptyCells(units.length)+"</tr>"; return; }
+    let startCol=taskStart<=visibleStart ? 0 : findCol(units,taskStart);
+    let endCol=taskEnd>=visibleEnd ? units.length-1 : findCol(units,taskEnd);
+    startCol=Math.max(0,Math.min(units.length-1,startCol)); endCol=Math.max(0,Math.min(units.length-1,endCol));
+    if (startCol<0 || endCol<startCol) { html += emptyCells(units.length)+"</tr>"; return; }
+    const colspan=endCol-startCol+1;
+    html += emptyCells(startCol);
+    html += `<td colspan="${colspan}"><div class="task-cell ${stateClass(record.state)}">${taskName}</div></td>`;
+    html += emptyCells(units.length-endCol-1)+"</tr>";
+  });
+  table.innerHTML=html;
+  if (!highlightToday) { line.style.display="none"; return; }
+  const today=startOfDay(new Date()), col=findCol(units,today);
+  if (col<0 || col>=units.length) { line.style.display="none"; return; }
+  const cell=table.rows[0]?.cells[col];
+  if (!cell) { line.style.display="none"; return; }
+  let ratio;
+  if (scale === "day") ratio=0.5;
+  else {
+    const unitStart=units[col].date, unitEnd=nextUnitDate(unitStart);
+    const numerator=dateOrdinal(today)-dateOrdinal(unitStart), denominator=dateOrdinal(unitEnd)-dateOrdinal(unitStart);
+    ratio=denominator>0 ? numerator/denominator : 0;
+  }
+  ratio=Math.max(0,Math.min(1,ratio));
+  const cellRect=cell.getBoundingClientRect(), containerRect=container.getBoundingClientRect();
+  const left=cellRect.left-containerRect.left+container.scrollLeft+ratio*cellRect.width;
+  line.style.left=`${left}px`;
+  line.style.height=""; line.style.bottom=""; line.style.display="block";
+  container.scrollLeft=Math.max(0,left-200);
 }
 
+/* Vérifie les colonnes requises et affiche une erreur explicite plutôt que de rester vide. */
+function onGristRecords(records,mappings) {
+  const normalized=normalizeGristRecords(records,mappings);
+  if (normalized.length) {
+    const first=normalized[0];
+    const missing=["task","start","end"].filter(key => !Object.prototype.hasOwnProperty.call(first,key));
+    if (missing.length) {
+      document.getElementById("gantt-table").innerHTML="";
+      document.getElementById("today-line").style.display="none";
+      showWidgetError("Le widget n'a pas reçu le mappage des colonnes obligatoires (tâche, date de début, date de fin). Ouvre les options du widget sur cette instance Grist et sélectionne à nouveau les colonnes correspondantes.");
+      console.error("Mappage Grist incomplet", {mappings, exempleEnregistrement:records[0]});
+      return;
+    }
+  }
+  clearWidgetError();
+  draw(normalized,FIXED_MAPPINGS);
+}
 
-/* =====================================================
-   RÉCEPTION DES DONNÉES GRIST
-   ===================================================== */
-
-grist.onRecords((records, mappings) => {
-    draw(records, mappings);
-});
-
+grist.onRecords((records,mappings) => onGristRecords(records,mappings));
 </script>
-
 </body>
 </html>
