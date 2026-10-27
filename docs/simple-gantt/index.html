@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -20,13 +20,76 @@ body { font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:550; 
 #gantt-table { border-collapse:collapse; table-layout:fixed; }
 #gantt-table td { box-sizing:border-box; height:26px; width:80px; text-align:center; vertical-align:middle; font-size:11px; line-height:1.2; }
 #gantt-table tr:first-child td { border-bottom:1px solid #DCE6F1; background:#EAF1F8; }
-.task-cell { color:white; border-radius:4px; padding:3px; font-size:11px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+
+.task-cell {
+    position: relative;
+    color: white;
+    border-radius: 4px;
+    padding: 4px;
+    margin-top: 22px;
+    font-size: 12px;
+
+    overflow: visible;
+    white-space: nowrap;
+    text-overflow: clip;
+    z-index: 2;
+}
+
+.task-label {
+    position: absolute;
+    left: 0;
+    top: -16px;
+    transform: none;
+
+    white-space: nowrap;
+    color: black;
+    text-shadow: none;
+    font-weight: normal;
+
+    pointer-events: none;
+    z-index: 5;
+}
+
 .task-a-faire { background:green; }
 .task-en-cours { background:dodgerblue; }
 .task-termine { background:gray; }
 .task-en-validation { background:orange; }
-.jalon-cell { position:relative; height:26px; text-align:center; vertical-align:middle; }
-.jalon-cell div:last-child { width:14px; height:14px; background:#e74c3c; transform:rotate(45deg); margin:4px auto 0; }
+
+
+
+.jalon-cell {
+    position: relative;
+    height: 28px;
+    text-align: center;
+    vertical-align: middle;
+    overflow: visible;
+}
+
+.jalon-cell div:first-child {
+    position: absolute;
+    left: calc(50% + 15px);
+    top: calc(50% + 2px);
+    transform: translateY(-50%);
+    color: black;
+    font-size: 12px;
+    font-weight: normal;
+    white-space: nowrap;
+    text-align: left;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.jalon-cell div:last-child {
+    width: 14px;
+    height: 14px;
+    background: #e74c3c;
+    transform: rotate(45deg);
+    margin: 4px auto 0;
+    position: relative;
+    z-index: 2;
+}
+
+
 .weekend { background:#fafafa; }
 .today-line { position:absolute; top:0; bottom:0; width:2px; background:red; pointer-events:none; z-index:10; }
 </style>
@@ -362,7 +425,9 @@ function draw(records,mappings) {
     if (startCol<0 || endCol<startCol) { html += emptyCells(units.length)+"</tr>"; return; }
     const colspan=endCol-startCol+1;
     html += emptyCells(startCol);
-    html += `<td colspan="${colspan}"><div class="task-cell ${stateClass(record.state)}">${taskName}</div></td>`;
+    //html += `<td colspan="${colspan}"><div class="task-cell ${stateClass(record.state)}">${taskName}</div></td>`;
+    html += `<td colspan="${colspan}"><div class="task-cell ${stateClass(record.state)}"><span class="task-label">${taskName}</span></div></td>`;
+    
     html += emptyCells(units.length-endCol-1)+"</tr>";
   });
   table.innerHTML=html;
