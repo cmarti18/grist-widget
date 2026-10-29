@@ -450,7 +450,25 @@ function initializeDateRange(records) {
   lastValidEndValue = formatDateInput(end);
   rangeInitialized = true;
 }
+function updateDateRange(records) {
+  const dates = collectTaskDates(records);
+  if (!dates.length) return;
 
+  const start = new Date(Math.min(...dates));
+  const end = new Date(Math.max(...dates));
+
+  const startValue = formatDateInput(start);
+  const endValue = formatDateInput(end);
+
+  document.getElementById("startDate").value = startValue;
+  document.getElementById("endDate").value = endValue;
+
+  lastValidStartValue = startValue;
+  lastValidEndValue = endValue;
+  rangeInitialized = true;
+
+  clearDateError();
+}
 function ensureTodayInRange() {
   const startInput = document.getElementById("startDate");
   const endInput = document.getElementById("endDate");
@@ -860,7 +878,25 @@ function draw(records,mappings) {
   const col = findCol(units,today);
 
   if (col<0 || col>=units.length) {
-    line.style.display = "none";
+    line.style.display = "none";function updateDateRange(records) {
+  const dates = collectTaskDates(records);
+  if (!dates.length) return;
+
+  const start = new Date(Math.min(...dates));
+  const end = new Date(Math.max(...dates));
+
+  const startValue = formatDateInput(start);
+  const endValue = formatDateInput(end);
+
+  document.getElementById("startDate").value = startValue;
+  document.getElementById("endDate").value = endValue;
+
+  lastValidStartValue = startValue;
+  lastValidEndValue = endValue;
+  rangeInitialized = true;
+
+  clearDateError();
+}
     return;
   }
 
@@ -929,6 +965,7 @@ function onGristRecords(records,mappings) {
   }
 
   clearWidgetError();
+  updateDateRange(normalized);
   draw(normalized,FIXED_MAPPINGS);
 }
 
