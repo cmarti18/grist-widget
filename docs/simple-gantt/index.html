@@ -79,6 +79,12 @@ body {
 }
 #date-error { color:#b91c1c; }
 #widget-error { color:#9a3412; }
+#dependencies-info {
+  display:none;
+  flex-basis:100%;
+  padding:2px 0;
+  color:#9a3412;
+}
 #gantt-container {
   position:relative;
   flex:1 1 auto;
@@ -149,7 +155,7 @@ body {
   transform:translateY(-50%);
   color:black;
   font-size:12px;
-  font-weight:font-weight: 400 !important;
+  font-weight:400 !important;
   white-space:nowrap;
   text-align:left;
   z-index:5;
@@ -164,7 +170,6 @@ body {
   position:relative;
   z-index:2;
 }
-.weekend { background:#fafafa; }
 .today-line {
   position:absolute;
   top:0;
@@ -173,6 +178,15 @@ body {
   background:red;
   pointer-events:none;
   z-index:10;
+}
+#dependencies-svg {
+  position:absolute;
+  top:0;
+  left:0;
+  display:none;
+  overflow:visible;
+  pointer-events:none;
+  z-index:8;
 }
 </style>
 </head>
@@ -215,10 +229,12 @@ body {
 
   <span id="date-error" role="alert" aria-live="polite"></span>
   <span id="widget-error" role="alert" aria-live="polite"></span>
+  <span id="dependencies-info" aria-live="polite"></span>
 </div>
 
 <div id="gantt-container">
   <table id="gantt-table"></table>
+  <svg id="dependencies-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
   <div id="today-line" class="today-line" style="display:none;"></div>
 </div>
 
@@ -231,8 +247,7 @@ const COLUMN_ROLES = {
   end:"end",
   jalon:"jalon",
   state:"state",
-  predecesseur:"predecesseur",
-  successeur:"successeur"
+  predecesseur:"predecesseur"
 };
 
 const FIXED_MAPPINGS = {
@@ -240,7 +255,8 @@ const FIXED_MAPPINGS = {
   start:"start",
   end:"end",
   jalon:"jalon",
-  state:"state"
+  state:"state",
+  predecesseur:"predecesseur"
 };
 
 grist.ready({
@@ -251,14 +267,14 @@ grist.ready({
     { name:"end", title:"Date de fin" },
     { name:"jalon", title:"Est un Jalon", optional:true },
     { name:"state", title:"Etat", optional:true },
-    { name:"predecesseur", title:"Predecesseur", optional:true },
-    { name:"successeur", title:"Successeur", optional:true }
+    { name:"predecesseur", title:"Prédécesseurs (références multiples)", optional:true }
   ]
 });
 
 let scale = "month";
 let currentRecords = [];
 let currentMappings = FIXED_MAPPINGS;
+let gristMappings = null;
 let highlightToday = false;
 let showDependencies = false;
 let rangeInitialized = false;
@@ -266,7 +282,8 @@ let lastValidStartValue = "";
 let lastValidEndValue = "";
 
 /* Normalise les enregistrements à l'aide de l'API Grist si elle est disponible,
-   sinon utilise explicitement le deuxième paramètre mappings de onRecords. */
+   sinon utilise explicitement le deuxième paramètre mappings de onRecords.
+   L'identifiant de ligne (id) est conservé : il sert à résoudre les dépendances. */
 function normalizeGristRecords(records, mappings) {
   return (records || []).map(record => {
     let mapped = null;
@@ -282,7 +299,7 @@ function normalizeGristRecords(records, mappings) {
       );
     }
 
-    const normalized = {};
+    const normalized = { id: record.id };
 
     for (const role of Object.keys(COLUMN_ROLES)) {
       if (mapped && Object.prototype.hasOwnProperty.call(mapped, role)) {
@@ -310,9 +327,7 @@ function updateDependencyControl(mappings) {
   const label = document.getElementById("dependencies-label");
   const checkbox = document.getElementById("showDependencies");
 
-  const hasPredecessor = Boolean(mappings && mappings.predecesseur);
-  const hasSuccessor = Boolean(mappings && mappings.successeur);
-  const available = hasPredecessor && hasSuccessor;
+  const available = Boolean(mappings && mappings.predecesseur);
 
   label.style.display = available ? "inline-flex" : "none";
 
@@ -450,6 +465,9 @@ function initializeDateRange(records) {
   lastValidEndValue = formatDateInput(end);
   rangeInitialized = true;
 }
+
+/* Recalcule la période (début/fin) à partir des tâches reçues.
+   Appelé à chaque modification des données : comportement voulu. */
 function updateDateRange(records) {
   const dates = collectTaskDates(records);
   if (!dates.length) return;
@@ -469,6 +487,7 @@ function updateDateRange(records) {
 
   clearDateError();
 }
+
 function ensureTodayInRange() {
   const startInput = document.getElementById("startDate");
   const endInput = document.getElementById("endDate");
@@ -734,14 +753,21 @@ function escapeHtml(value) {
     .replace(/'/g,"&#39;");
 }
 
+/* Couleur selon l'état. Convention : "1-…" à faire, "2-…" en cours,
+   "3-…" en validation ; tout le reste (ex. "4-Terminé") est gris.
+   Les mots-clés « à faire », « en cours » et « validation » sont aussi reconnus. */
 function stateClass(state) {
   if (!state) return "task-a-faire";
 
-  state = String(state).toLowerCase();
+  const text = String(state)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .trim();
 
-  if (state.includes("1-")) return "task-a-faire";
-  if (state.includes("2-")) return "task-en-cours";
-  if (state.includes("3-")) return "task-en-validation";
+  if (/(^|[^0-9])1\s*[-–]/.test(text) || text.startsWith("a faire")) return "task-a-faire";
+  if (/(^|[^0-9])2\s*[-–]/.test(text) || text.startsWith("en cours")) return "task-en-cours";
+  if (/(^|[^0-9])3\s*[-–]/.test(text) || text.startsWith("en validation") || text.startsWith("validation")) return "task-en-validation";
 
   return "task-termine";
 }
@@ -750,6 +776,193 @@ function emptyCells(count) {
   return "<td></td>".repeat(Math.max(0,count));
 }
 
+/* ----------- Dépendances ----------- */
+
+/* Colonne « Prédécesseurs » : liste de références vers d'autres lignes de la table.
+   Selon la colonne, Grist fournit des numéros de ligne ([3, 5]) ou les noms affichés
+   (["E0060- COPIL ..."]) : on accepte les deux. Un simple numéro ou nom est aussi accepté. */
+function parseRefList(value) {
+  if (typeof value === "number") return value > 0 ? [value] : [];
+  if (typeof value === "string") return value.trim() ? [value] : [];
+  if (!Array.isArray(value)) return [];
+
+  return value.filter(item =>
+    (typeof item === "number" && item > 0) ||
+    (typeof item === "string" && item.trim() && item !== "L")
+  );
+}
+
+function normalizeName(value) {
+  return String(value ?? "").replace(/\s+/g," ").trim().toLowerCase();
+}
+
+function hasLinkValue(value) {
+  if (value === null || value === undefined || value === "" || value === 0) return false;
+  if (Array.isArray(value)) return value.some(item => item !== "L");
+  return true;
+}
+
+function describeValue(value) {
+  try {
+    const text = JSON.stringify(value);
+    return text === undefined ? "undefined" : text;
+  } catch (err) {
+    return String(value);
+  }
+}
+
+/* Construit la liste des liens {from, to} : from doit finir avant que to commence.
+   edges.unresolved contient les références qui ne correspondent à aucune tâche. */
+function buildDependencyEdges(records) {
+  const byId = new Map(records.map(record => [String(record.id), record]));
+  const byName = new Map();
+
+  records.forEach(record => {
+    const name = normalizeName(record.task);
+    if (name && !byName.has(name)) byName.set(name, record);
+  });
+
+  const edges = [];
+  const seen = new Set();
+  edges.unresolved = [];
+
+  records.forEach(record => {
+    parseRefList(record.predecesseur).forEach(ref => {
+      const from = typeof ref === "number" ? byId.get(String(ref)) : byName.get(normalizeName(ref));
+
+      if (!from) {
+        edges.unresolved.push(ref);
+        return;
+      }
+
+      const key = `${from.id}>${record.id}`;
+      if (from === record || seen.has(key)) return;
+
+      seen.add(key);
+      edges.push({ from, to: record });
+    });
+  });
+
+  return edges;
+}
+
+function setDependenciesInfo(message) {
+  const el = document.getElementById("dependencies-info");
+  el.textContent = message || "";
+  el.style.display = message ? "block" : "none";
+}
+
+function clearDependencies() {
+  const svg = document.getElementById("dependencies-svg");
+  svg.innerHTML = "";
+  svg.style.display = "none";
+  setDependenciesInfo("");
+}
+
+/* Dessine les flèches en SVG par-dessus le tableau, à partir de la position réelle des barres.
+   Si rien ne peut être dessiné, un message explique pourquoi. */
+function drawDependencies(table, container, records) {
+  clearDependencies();
+
+  if (!showDependencies) return;
+
+  const column = (gristMappings && gristMappings.predecesseur) || "predecesseur";
+  const filled = records.filter(record => hasLinkValue(record.predecesseur));
+
+  if (!filled.length) {
+    setDependenciesInfo(
+      `Aucune dépendance : la colonne « ${column} » est vide pour toutes les lignes (valeur lue sur la première ligne : ${describeValue(records[0] && records[0].predecesseur)}). ` +
+      "Vérifiez que c'est bien elle qui contient les prédécesseurs."
+    );
+    return;
+  }
+
+  const edges = buildDependencyEdges(records);
+
+  if (!edges.length) {
+    setDependenciesInfo(
+      `Aucune tâche ne correspond aux valeurs de « ${column} » (exemple : ${describeValue(edges.unresolved[0] ?? filled[0].predecesseur)}). ` +
+      "Les valeurs doivent être des numéros de ligne ou des noms identiques à ceux de la colonne « tâche »."
+    );
+    return;
+  }
+
+  const rows = new Map();
+  table.querySelectorAll("tr[data-row-id]").forEach(tr => {
+    rows.set(tr.getAttribute("data-row-id"), tr);
+  });
+
+  const containerRect = container.getBoundingClientRect();
+
+  const getBox = tr => {
+    if (!tr) return null;
+
+    const el = tr.querySelector(".task-cell") || tr.querySelector(".jalon-cell > div:last-child");
+    if (!el) return null;
+
+    const r = el.getBoundingClientRect();
+    const left = r.left - containerRect.left + container.scrollLeft;
+    const top = r.top - containerRect.top + container.scrollTop;
+
+    return { left, right:left+r.width, top, bottom:top+r.height, midY:top+r.height/2 };
+  };
+
+  const GAP = 8;
+  let paths = "";
+
+  edges.forEach(({ from, to }) => {
+    const a = getBox(rows.get(String(from.id)));
+    const b = getBox(rows.get(String(to.id)));
+
+    if (!a || !b) return;
+
+    const x1 = a.right;
+    const y1 = a.midY;
+    const x2 = b.left;
+    const y2 = b.midY;
+
+    let d;
+
+    if (x2 - x1 >= 2*GAP) {
+      d = `M${x1},${y1} H${x1+GAP} V${y2} H${x2}`;
+    } else {
+      /* La cible commence avant (ou juste après) la fin de la source :
+         on contourne par la ligne située sous la barre source. */
+      const yLeg = a.bottom + 3;
+      d = `M${x1},${y1} H${x1+GAP} V${yLeg} H${x2-GAP} V${y2} H${x2}`;
+    }
+
+    paths += `<path d="${d}"/>`;
+  });
+
+  if (!paths) {
+    setDependenciesInfo(
+      "Dépendances trouvées, mais aucune n'est visible : les tâches liées sont hors de la période affichée ou n'ont pas de dates."
+    );
+    return;
+  }
+
+  const svg = document.getElementById("dependencies-svg");
+
+  svg.setAttribute("width", table.offsetWidth);
+  svg.setAttribute("height", table.offsetHeight);
+
+  svg.innerHTML =
+    `<defs><marker id="dep-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">` +
+    `<path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs>` +
+    `<g fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#dep-arrow)">${paths}</g>`;
+
+  svg.style.display = "block";
+
+  if (edges.unresolved.length) {
+    setDependenciesInfo(
+      `${edges.unresolved.length} lien(s) ignoré(s) : tâche prédécesseur introuvable (exemple : ${describeValue(edges.unresolved[0])}).`
+    );
+  }
+}
+
+/* ----------- Dessin principal ----------- */
+
 function draw(records,mappings) {
   currentRecords = records || [];
   currentMappings = FIXED_MAPPINGS;
@@ -757,6 +970,8 @@ function draw(records,mappings) {
   const table = document.getElementById("gantt-table");
   const line = document.getElementById("today-line");
   const container = document.getElementById("gantt-container");
+
+  clearDependencies();
 
   if (!currentRecords.length) {
     table.innerHTML = "";
@@ -803,7 +1018,7 @@ function draw(records,mappings) {
   html += "</tr>";
 
   currentRecords.forEach(record => {
-    html += "<tr>";
+    html += `<tr data-row-id="${escapeHtml(record.id)}">`;
 
     const start = parseDate(record.start);
     const end = parseDate(record.end);
@@ -859,15 +1074,13 @@ function draw(records,mappings) {
     const colspan = endCol-startCol+1;
 
     html += emptyCells(startCol);
-
-    //html += `<td colspan="${colspan}"><div class="task-cell ${stateClass(record.state)}">${taskName}</div></td>`;
-
     html += `<td colspan="${colspan}"><div class="task-cell ${stateClass(record.state)}"><span class="task-label">${taskName}</span></div></td>`;
-
     html += emptyCells(units.length-endCol-1)+"</tr>";
   });
 
   table.innerHTML = html;
+
+  drawDependencies(table, container, currentRecords);
 
   if (!highlightToday) {
     line.style.display = "none";
@@ -878,25 +1091,7 @@ function draw(records,mappings) {
   const col = findCol(units,today);
 
   if (col<0 || col>=units.length) {
-    line.style.display = "none";function updateDateRange(records) {
-  const dates = collectTaskDates(records);
-  if (!dates.length) return;
-
-  const start = new Date(Math.min(...dates));
-  const end = new Date(Math.max(...dates));
-
-  const startValue = formatDateInput(start);
-  const endValue = formatDateInput(end);
-
-  document.getElementById("startDate").value = startValue;
-  document.getElementById("endDate").value = endValue;
-
-  lastValidStartValue = startValue;
-  lastValidEndValue = endValue;
-  rangeInitialized = true;
-
-  clearDateError();
-}
+    line.style.display = "none";
     return;
   }
 
@@ -936,6 +1131,7 @@ function draw(records,mappings) {
 
 /* Vérifie les colonnes requises et affiche une erreur explicite plutôt que de rester vide. */
 function onGristRecords(records,mappings) {
+  gristMappings = mappings;
   updateDependencyControl(mappings);
 
   const normalized = normalizeGristRecords(records,mappings);
@@ -950,6 +1146,7 @@ function onGristRecords(records,mappings) {
     if (missing.length) {
       document.getElementById("gantt-table").innerHTML = "";
       document.getElementById("today-line").style.display = "none";
+      clearDependencies();
 
       showWidgetError(
         "Le widget n'a pas reçu le mappage des colonnes obligatoires (tâche, date de début, date de fin). Ouvre les options du widget sur cette instance Grist et sélectionne à nouveau les colonnes correspondantes."
