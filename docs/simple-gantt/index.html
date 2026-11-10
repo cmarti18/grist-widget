@@ -59,6 +59,13 @@ body {
   white-space:nowrap;
   margin-left:4px;
 }
+#borders-label {
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  white-space:nowrap;
+  margin-left:4px;
+}
 #dependencies-label {
   display:none;
   align-items:center;
@@ -104,8 +111,9 @@ body {
   font-size:11px;
   line-height:1.2;
   white-space:nowrap;
-  border-right: 1px solid #E0E0E0;
+  border-right: 1px solid #EEEEEE;
 }
+#gantt-container.no-borders #gantt-table td { border-right-color:transparent; }
 
 #gantt-table tr:first-child td {
   position: sticky;
@@ -127,7 +135,7 @@ body {
 }
 .task-label {
   position:absolute;
-  left:3px;
+  left:9px;
   top:-16px;
   transform:none;
   white-space:nowrap;
@@ -141,18 +149,18 @@ body {
 .task-en-cours { background:dodgerblue; }
 .task-termine { background:gray; }
 .task-en-validation { background:orange; }
-.jalon-cell {
+#gantt-table td.jalon-cell {
   position:relative;
-  height:28px;
+  height:42px;
   text-align:center;
-  vertical-align:middle;
+  vertical-align:top;
   overflow:visible;
 }
 .jalon-cell div:first-child {
   position:absolute;
-  left:calc(50% + 15px);
-  top:calc(50% + 2px);
-  transform:translateY(-50%);
+  left:calc(50% + 16px);
+  top:9px;
+  transform:none;
   color:black;
   font-size:12px;
   font-weight:400 !important;
@@ -166,7 +174,7 @@ body {
   height:14px;
   background:#e74c3c;
   transform:rotate(45deg);
-  margin:4px auto 0;
+  margin:18px auto 0;
   position:relative;
   z-index:2;
 }
@@ -225,6 +233,10 @@ body {
 
   <label id="dependencies-label">
     <input type="checkbox" id="showDependencies"> Dépendances
+  </label>
+
+  <label id="borders-label">
+    <input type="checkbox" id="showBorders" checked> Bordures
   </label>
 
   <span id="date-error" role="alert" aria-live="polite"></span>
@@ -638,6 +650,14 @@ document.getElementById("showDependencies").addEventListener("change", e => {
   draw(currentRecords,FIXED_MAPPINGS);
 });
 
+function syncBorders() {
+  const visible = document.getElementById("showBorders").checked;
+  document.getElementById("gantt-container").classList.toggle("no-borders", !visible);
+}
+
+document.getElementById("showBorders").addEventListener("change", syncBorders);
+syncBorders();
+
 document.getElementById("startDate").addEventListener("input", function() {
   validateDateFieldLive(this);
 });
@@ -852,11 +872,37 @@ function setDependenciesInfo(message) {
   el.style.display = message ? "block" : "none";
 }
 
+/* Bleu clair, de la même teinte que l'en-tête du tableau mais assez soutenu pour rester visible sur fond blanc. */
+const DEPENDENCY_COLOR = "#7BA2CF";
+
 function clearDependencies() {
   const svg = document.getElementById("dependencies-svg");
   svg.innerHTML = "";
   svg.style.display = "none";
   setDependenciesInfo("");
+}
+
+/* Tracé d'un lien « fin → début » façon Microsoft Project :
+   la ligne sort de la fin du prédécesseur (a), puis arrive par le haut de la barre
+   du successeur (b), près de son coin gauche (au sommet du losange pour un jalon).
+   Si le successeur est au-dessus du prédécesseur, la flèche arrive par le bas. */
+function dependencyPath(a, b) {
+  const GAP = 8;
+
+  const x1 = a.right;
+  const y1 = a.midY;
+  const xt = b.isJalon ? (b.left + b.right) / 2 : Math.min(b.left + 3, (b.left + b.right) / 2);
+  const down = b.midY > a.midY;
+  const yEnd = down ? b.top : b.bottom;
+
+  if (xt >= x1 + GAP) {
+    return `M${x1},${y1} H${xt} V${yEnd}`;
+  }
+
+  /* Le successeur commence avant la fin du prédécesseur : on passe par l'espace entre les lignes. */
+  const yLeg = down ? b.rowTop + 2 : b.bottom + 6;
+
+  return `M${x1},${y1} H${x1+GAP} V${yLeg} H${xt} V${yEnd}`;
 }
 
 /* Dessine les flèches en SVG par-dessus le tableau, à partir de la position réelle des barres.
@@ -897,17 +943,22 @@ function drawDependencies(table, container, records) {
   const getBox = tr => {
     if (!tr) return null;
 
-    const el = tr.querySelector(".task-cell") || tr.querySelector(".jalon-cell > div:last-child");
+    const jalon = tr.querySelector(".jalon-cell > div:last-child");
+    const el = tr.querySelector(".task-cell") || jalon;
     if (!el) return null;
 
     const r = el.getBoundingClientRect();
+    const rowRect = tr.getBoundingClientRect();
     const left = r.left - containerRect.left + container.scrollLeft;
     const top = r.top - containerRect.top + container.scrollTop;
+    const rowTop = rowRect.top - containerRect.top + container.scrollTop;
 
-    return { left, right:left+r.width, top, bottom:top+r.height, midY:top+r.height/2 };
+    return {
+      left, right:left+r.width, top, bottom:top+r.height, midY:top+r.height/2,
+      rowTop, isJalon:Boolean(jalon) && el === jalon
+    };
   };
 
-  const GAP = 8;
   let paths = "";
 
   edges.forEach(({ from, to }) => {
@@ -916,23 +967,7 @@ function drawDependencies(table, container, records) {
 
     if (!a || !b) return;
 
-    const x1 = a.right;
-    const y1 = a.midY;
-    const x2 = b.left;
-    const y2 = b.midY;
-
-    let d;
-
-    if (x2 - x1 >= 2*GAP) {
-      d = `M${x1},${y1} H${x1+GAP} V${y2} H${x2}`;
-    } else {
-      /* La cible commence avant (ou juste après) la fin de la source :
-         on contourne par la ligne située sous la barre source. */
-      const yLeg = a.bottom + 3;
-      d = `M${x1},${y1} H${x1+GAP} V${yLeg} H${x2-GAP} V${y2} H${x2}`;
-    }
-
-    paths += `<path d="${d}"/>`;
+    paths += `<path d="${dependencyPath(a, b)}"/>`;
   });
 
   if (!paths) {
@@ -948,9 +983,9 @@ function drawDependencies(table, container, records) {
   svg.setAttribute("height", table.offsetHeight);
 
   svg.innerHTML =
-    `<defs><marker id="dep-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">` +
-    `<path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs>` +
-    `<g fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#dep-arrow)">${paths}</g>`;
+    `<defs><marker id="dep-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">` +
+    `<path d="M0,0 L10,5 L0,10 z" fill="${DEPENDENCY_COLOR}"/></marker></defs>` +
+    `<g fill="none" stroke="${DEPENDENCY_COLOR}" stroke-width="1" stroke-linejoin="round" marker-end="url(#dep-arrow)">${paths}</g>`;
 
   svg.style.display = "block";
 
