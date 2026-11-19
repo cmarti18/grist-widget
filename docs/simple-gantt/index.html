@@ -10,6 +10,7 @@ body {
   font-size:12px;
   font-weight:400;
   color:#222;
+  background:#fff;
   margin:0;
   height:100vh;
   display:flex;
@@ -97,70 +98,71 @@ body {
   flex:1 1 auto;
   min-height:0;
   overflow:auto;
+  background:#fff;
 }
-#gantt-table {
-  border-collapse:collapse;
-  table-layout:fixed;
-}
-#gantt-table td {
-  box-sizing:border-box;
-  height:26px;
-  width:80px;
-  text-align:center;
-  vertical-align:middle;
-  font-size:11px;
-  line-height:1.2;
-  white-space:nowrap;
-  border-right: 1px solid #EEEEEE;
-}
-#gantt-container.no-borders #gantt-table td { border-right-color:transparent; }
-
-#gantt-table tr:first-child td {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: #EAF1F8;
-}
-.task-cell {
+#gantt-canvas {
   position:relative;
-  color:white;
-  border-radius:4px;
-  padding:4px;
-  margin-top:22px;
+  background:#fff;
   font-size:12px;
-  overflow:visible;
+  line-height:1.2;
+}
+#gantt-header {
+  position:sticky;
+  top:0;
+  z-index:10;
+  display:flex;
+  height:28px;
+  background:#EAF1F8;
+}
+.col-head {
+  box-sizing:border-box;
+  flex:0 0 80px;
+  width:80px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-size:11px;
   white-space:nowrap;
-  text-overflow:clip;
+  border-right:1px solid #EEEEEE;
+}
+#gantt-body {
+  position:relative;
+  background-image:repeating-linear-gradient(to right, transparent 0, transparent 79px, #EEEEEE 79px, #EEEEEE 80px);
+}
+#gantt-container.no-borders .col-head { border-right-color:transparent; }
+#gantt-container.no-borders #gantt-body { background-image:none; }
+.g-row { position:relative; }
+.task-cell {
+  position:absolute;
+  top:22px;
+  height:8px;
+  box-sizing:border-box;
+  border-radius:4px;
+  background:#808080;
   z-index:2;
 }
 .task-label {
   position:absolute;
   left:9px;
   top:-16px;
-  transform:none;
   white-space:nowrap;
   color:black;
-  text-shadow:none;
-  font-weight: 400 !important;
+  font-size:12px;
+  font-weight:400 !important;
   pointer-events:none;
   z-index:5;
 }
-.task-a-faire { background:green; }
-.task-en-cours { background:dodgerblue; }
-.task-termine { background:gray; }
-.task-en-validation { background:orange; }
-#gantt-table td.jalon-cell {
-  position:relative;
-  height:42px;
-  text-align:center;
-  vertical-align:top;
-  overflow:visible;
-}
-.jalon-cell div:first-child {
+.jalon-cell {
   position:absolute;
-  left:calc(50% + 16px);
+  top:0;
+  width:0;
+  height:44px;
+}
+.jalon-label {
+  position:absolute;
+  left:16px;
   top:9px;
-  transform:none;
   color:black;
   font-size:12px;
   font-weight:400 !important;
@@ -169,13 +171,14 @@ body {
   z-index:5;
   pointer-events:none;
 }
-.jalon-cell div:last-child {
+.jalon-mark {
+  position:absolute;
+  left:-7px;
+  top:18px;
   width:14px;
   height:14px;
   background:#e74c3c;
   transform:rotate(45deg);
-  margin:18px auto 0;
-  position:relative;
   z-index:2;
 }
 .today-line {
@@ -186,6 +189,93 @@ body {
   background:red;
   pointer-events:none;
   z-index:10;
+}
+#states-btn {
+  margin-left:auto;
+  height:27px;
+  padding:3px 10px;
+  color:#333;
+  background:#EAF1F8;
+  border:1px solid #b8c7db;
+  border-radius:4px;
+  font-family:inherit;
+  font-size:12px;
+  cursor:pointer;
+}
+#states-panel {
+  display:none;
+  flex:0 0 auto;
+  max-height:65vh;
+  overflow:auto;
+  padding:8px 12px 6px;
+  background:#fff;
+  border-bottom:1px solid #c7d3e3;
+}
+#states-panel h3 { margin:0 0 2px; font-size:13px; font-weight:600; }
+#states-panel .st-help { margin:0 0 6px; color:#555; }
+.st-row {
+  display:grid;
+  grid-template-columns:120px minmax(0,1fr) 110px;
+  gap:12px;
+  align-items:start;
+  padding:7px 0;
+  border-top:1px solid #e6ecf4;
+}
+.st-label { display:flex; align-items:center; gap:7px; font-weight:600; }
+.st-dot { width:10px; height:10px; border-radius:50%; flex:none; }
+.st-names {
+  box-sizing:border-box;
+  width:100%;
+  height:58px;
+  resize:vertical;
+  padding:4px 6px;
+  font-family:monospace;
+  font-size:12px;
+  border:1px solid #b8c7db;
+  border-radius:4px;
+}
+.st-color { display:flex; align-items:center; gap:6px; }
+.st-color input[type=color] {
+  width:40px;
+  height:28px;
+  padding:1px;
+  background:#fff;
+  border:1px solid #b8c7db;
+  border-radius:4px;
+  cursor:pointer;
+}
+.st-hex { font-family:monospace; color:#555; }
+.st-chip {
+  display:inline-block;
+  margin:0 4px 4px 0;
+  padding:1px 7px;
+  background:#f4f7fb;
+  border:1px solid #b8c7db;
+  border-radius:4px;
+}
+.st-none { color:#777; }
+.st-note { color:#555; padding-top:6px; }
+.st-preview { border-top:1px solid #e6ecf4; padding:6px 0 4px; }
+.st-preview .pv-name { margin:6px 0 2px; }
+.st-preview .pv-bar { height:8px; border-radius:4px; }
+.st-footer {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding-top:6px;
+  border-top:1px solid #e6ecf4;
+  color:#555;
+}
+.st-footer button {
+  margin-left:6px;
+  padding:3px 10px;
+  font-family:inherit;
+  font-size:12px;
+  background:#EAF1F8;
+  border:1px solid #b8c7db;
+  border-radius:4px;
+  cursor:pointer;
 }
 #dependencies-svg {
   position:absolute;
@@ -239,15 +329,68 @@ body {
     <input type="checkbox" id="showBorders" checked> Bordures
   </label>
 
+  <button type="button" id="states-btn" aria-expanded="false" aria-controls="states-panel">États</button>
+
   <span id="date-error" role="alert" aria-live="polite"></span>
   <span id="widget-error" role="alert" aria-live="polite"></span>
   <span id="dependencies-info" aria-live="polite"></span>
 </div>
 
+<div id="states-panel" style="--c-futur:#008000;--c-cours:#1e90ff;--c-passe:#808080;--c-autres:#000000;">
+  <h3>Couleurs des états</h3>
+  <p class="st-help">Un état par ligne. La casse et les espaces en trop sont ignorés.</p>
+
+  <div class="st-row">
+    <div class="st-label"><span class="st-dot" style="background:var(--c-futur)"></span>Futur</div>
+    <textarea class="st-names" id="st-names-futur" aria-label="États Futur" spellcheck="false"></textarea>
+    <div class="st-color"><input type="color" id="st-color-futur" aria-label="Couleur Futur"><span class="st-hex" id="st-hex-futur"></span></div>
+  </div>
+
+  <div class="st-row">
+    <div class="st-label"><span class="st-dot" style="background:var(--c-cours)"></span>En cours</div>
+    <textarea class="st-names" id="st-names-cours" aria-label="États En cours" spellcheck="false"></textarea>
+    <div class="st-color"><input type="color" id="st-color-cours" aria-label="Couleur En cours"><span class="st-hex" id="st-hex-cours"></span></div>
+  </div>
+
+  <div class="st-row">
+    <div class="st-label"><span class="st-dot" style="background:var(--c-passe)"></span>Passé</div>
+    <textarea class="st-names" id="st-names-passe" aria-label="États Passé" spellcheck="false"></textarea>
+    <div class="st-color"><input type="color" id="st-color-passe" aria-label="Couleur Passé"><span class="st-hex" id="st-hex-passe"></span></div>
+  </div>
+
+  <div class="st-row">
+    <div class="st-label"><span class="st-dot" style="background:var(--c-autres)"></span>Autres états</div>
+    <div class="st-note">Tout état non listé ci-dessus, ou sans état.</div>
+    <div class="st-color"><input type="color" id="st-color-autres" aria-label="Couleur Autres états"><span class="st-hex" id="st-hex-autres"></span></div>
+  </div>
+
+  <div class="st-row" style="align-items:center">
+    <div>Détectés, non classés</div>
+    <div id="states-unclassified"></div>
+    <div>Couleur « Autres »</div>
+  </div>
+
+  <div class="st-preview">
+    <div>Aperçu</div>
+    <div class="pv-name">Passé</div><div class="pv-bar" style="width:46%;background:var(--c-passe)"></div>
+    <div class="pv-name" style="margin-left:20%">En cours</div><div class="pv-bar" style="width:40%;margin-left:20%;background:var(--c-cours)"></div>
+    <div class="pv-name" style="margin-left:50%">Futur</div><div class="pv-bar" style="width:30%;margin-left:50%;background:var(--c-futur)"></div>
+    <div class="pv-name" style="margin-left:35%">Autres états</div><div class="pv-bar" style="width:22%;margin-left:35%;background:var(--c-autres)"></div>
+  </div>
+
+  <div class="st-footer">
+    <span id="states-save-info">Enregistré automatiquement dans le document</span>
+    <span><button type="button" id="states-reset">Réinitialiser</button><button type="button" id="states-close">Fermer</button></span>
+  </div>
+</div>
+
 <div id="gantt-container">
-  <table id="gantt-table"></table>
-  <svg id="dependencies-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
-  <div id="today-line" class="today-line" style="display:none;"></div>
+  <div id="gantt-canvas">
+    <div id="gantt-header"></div>
+    <div id="gantt-body"></div>
+    <svg id="dependencies-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+    <div id="today-line" class="today-line" style="display:none;"></div>
+  </div>
 </div>
 
 <script>
@@ -721,6 +864,11 @@ function nextUnitDate(date) {
   return d;
 }
 
+/* Numéro de jour (entier) d'une date, indépendant de l'heure et du changement d'heure. */
+function dayNumber(date) {
+  return Math.round(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())/86400000);
+}
+
 function generateUnits(min,max) {
   const units = [];
   let current = alignToUnit(min);
@@ -736,28 +884,53 @@ function generateUnits(min,max) {
     } else if (scale === "quarter") {
       label = `T${Math.floor(month/3)+1} ${year}`;
     } else if (scale === "month") {
-      label = current.toLocaleString("fr-FR",{month:"short",year:"numeric"});
+      label = `${year}<br>${current.toLocaleString("fr-FR",{month:"short"})}`;
     } else if (scale === "week") {
       label = `S${getWeekNumber(current)}<br>${String(current.getDate()).padStart(2,"0")}/${String(month+1).padStart(2,"0")}`;
     } else {
       label = `&nbsp;${String(current.getDate()).padStart(2,"0")}/${String(month+1).padStart(2,"0")}/${String(year).slice(-2)}&nbsp;`;
     }
 
-    units.push({date:new Date(current),label});
+    units.push({
+      date:new Date(current),
+      label,
+      startDay:dayNumber(current),
+      endDay:dayNumber(nextUnitDate(current))
+    });
     current = nextUnitDate(current);
   }
 
   return units;
 }
 
-function findCol(units,date) {
-  if (!date || !units.length) return -1;
+/* Géométrie du graphique : chaque unité de temps occupe COL_W pixels, et une date
+   est placée proportionnellement à sa position dans l'unité (jour 1 = bord gauche,
+   dernier jour = bord droit). */
+const COL_W = 80;
+const HEADER_H = 28;
+const ROW_H = { empty:28, task:32, jalon:44 };
+const MIN_BAR_W = 4;
+const JALON_HALF = 9.9;
 
-  for (let i=0; i<units.length; i++) {
-    if (date>=units[i].date && date<nextUnitDate(units[i].date)) return i;
+/* Abscisse (px) d'un instant exprimé en jours (entier = début de ce jour, +0.5 = midi). */
+function xOfDay(units,day) {
+  if (!units.length) return 0;
+  if (day <= units[0].startDay) return 0;
+
+  const last = units[units.length-1];
+  if (day >= last.endDay) return units.length*COL_W;
+
+  let lo = 0;
+  let hi = units.length-1;
+
+  while (lo<hi) {
+    const mid = (lo+hi+1)>>1;
+    if (units[mid].startDay <= day) lo = mid;
+    else hi = mid-1;
   }
 
-  return date<units[0].date ? -1 : units.length;
+  const unit = units[lo];
+  return lo*COL_W + COL_W*(day-unit.startDay)/(unit.endDay-unit.startDay);
 }
 
 function dateOrdinal(date) {
@@ -773,28 +946,251 @@ function escapeHtml(value) {
     .replace(/'/g,"&#39;");
 }
 
-/* Couleur selon l'état. Convention : "1-…" à faire, "2-…" en cours,
-   "3-…" en validation ; tout le reste (ex. "4-Terminé") est gris.
-   Les mots-clés « à faire », « en cours » et « validation » sont aussi reconnus. */
-function stateClass(state) {
-  if (!state) return "task-a-faire";
+/* ----------- Couleurs des états (réglables dans le panneau « États ») ----------- */
 
-  const text = String(state)
+const STATE_CATEGORIES = ["futur","cours","passe"];
+const DEFAULT_STATE_COLORS = { futur:"#008000", cours:"#1e90ff", passe:"#808080", autres:"#000000" };
+const MAX_STATE_NAMES = 500;
+
+let storedStateSettings = null;
+let statesPanelOpen = false;
+let statesSaveTimer = null;
+
+/* Valeur de la colonne état sous forme de texte (gère aussi une liste de choix). */
+function stateText(value) {
+  if (Array.isArray(value)) {
+    value = value.find(item => item !== "L" && item !== null && item !== undefined && item !== "");
+  }
+
+  return value === null || value === undefined ? "" : String(value);
+}
+
+function isHexColor(value) {
+  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
+}
+
+/* Ancienne règle (préfixes « 1- », « 2- », « 3- ») : sert uniquement à préremplir
+   les listes tant qu'aucun réglage n'a été enregistré. */
+function legacyStateCategory(text) {
+  const t = String(text)
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g,"")
     .trim();
 
-  if (/(^|[^0-9])1\s*[-–]/.test(text) || text.startsWith("a faire")) return "task-a-faire";
-  if (/(^|[^0-9])2\s*[-–]/.test(text) || text.startsWith("en cours")) return "task-en-cours";
-  if (/(^|[^0-9])3\s*[-–]/.test(text) || text.startsWith("en validation") || text.startsWith("validation")) return "task-en-validation";
+  if (/(^|[^0-9])1\s*[-–]/.test(t) || t.startsWith("a faire")) return "futur";
+  if (/(^|[^0-9])2\s*[-–]/.test(t) || t.startsWith("en cours")) return "cours";
+  if (/(^|[^0-9])3\s*[-–]/.test(t) || t.startsWith("en validation") || t.startsWith("validation")) return "cours";
 
-  return "task-termine";
+  return "passe";
 }
 
-function emptyCells(count) {
-  return "<td></td>".repeat(Math.max(0,count));
+function deriveDefaultStateSettings(records) {
+  const settings = {
+    futur:{ names:[], color:DEFAULT_STATE_COLORS.futur },
+    cours:{ names:[], color:DEFAULT_STATE_COLORS.cours },
+    passe:{ names:[], color:DEFAULT_STATE_COLORS.passe },
+    autres:{ color:DEFAULT_STATE_COLORS.autres }
+  };
+
+  const seen = new Set();
+
+  (records || []).forEach(record => {
+    const text = stateText(record.state).replace(/\s+/g," ").trim();
+    const key = normalizeName(text);
+
+    if (!text || seen.has(key)) return;
+
+    seen.add(key);
+    settings[legacyStateCategory(text)].names.push(text);
+  });
+
+  return settings;
 }
+
+/* Valide des réglages venant du document : renvoie null s'ils sont inutilisables. */
+function sanitizeStateSettings(raw) {
+  if (!raw || typeof raw !== "object") return null;
+
+  const result = {};
+
+  for (const cat of STATE_CATEGORIES) {
+    const source = (raw[cat] && typeof raw[cat] === "object") ? raw[cat] : {};
+    const names = Array.isArray(source.names) ? source.names : [];
+
+    result[cat] = {
+      names: names
+        .filter(name => typeof name === "string")
+        .map(name => name.replace(/\s+/g," ").trim())
+        .filter(Boolean)
+        .slice(0,MAX_STATE_NAMES),
+      color: isHexColor(source.color) ? source.color.toLowerCase() : DEFAULT_STATE_COLORS[cat]
+    };
+  }
+
+  const others = (raw.autres && typeof raw.autres === "object") ? raw.autres : {};
+  result.autres = { color: isHexColor(others.color) ? others.color.toLowerCase() : DEFAULT_STATE_COLORS.autres };
+
+  return result;
+}
+
+function effectiveStateSettings() {
+  return storedStateSettings || deriveDefaultStateSettings(currentRecords);
+}
+
+/* Renvoie une fonction état -> couleur. En cas de doublon, la première catégorie l'emporte. */
+function buildStateLookup(settings) {
+  const colors = new Map();
+
+  for (const cat of STATE_CATEGORIES) {
+    settings[cat].names.forEach(name => {
+      const key = normalizeName(name);
+      if (key && !colors.has(key)) colors.set(key, settings[cat].color);
+    });
+  }
+
+  return state => {
+    const key = normalizeName(stateText(state));
+    return (key && colors.get(key)) || settings.autres.color;
+  };
+}
+
+function statesPanelHasFocus() {
+  return document.getElementById("states-panel").contains(document.activeElement);
+}
+
+function setStatesSaveInfo(text) {
+  document.getElementById("states-save-info").textContent = text;
+}
+
+/* Lit le panneau et renvoie les réglages validés. */
+function readStatesPanel() {
+  const settings = {};
+
+  for (const cat of STATE_CATEGORIES) {
+    settings[cat] = {
+      names: document.getElementById(`st-names-${cat}`).value.split(/\r?\n/),
+      color: document.getElementById(`st-color-${cat}`).value
+    };
+  }
+
+  settings.autres = { color: document.getElementById("st-color-autres").value };
+
+  return sanitizeStateSettings(settings);
+}
+
+/* Met à jour les pastilles de couleur, l'aperçu et la liste des états non classés. */
+function refreshStatesPanelInfo(settings) {
+  const panel = document.getElementById("states-panel");
+
+  for (const cat of [...STATE_CATEGORIES,"autres"]) {
+    panel.style.setProperty(`--c-${cat}`, settings[cat].color);
+    document.getElementById(`st-hex-${cat}`).textContent = settings[cat].color;
+  }
+
+  const known = new Set();
+  STATE_CATEGORIES.forEach(cat => settings[cat].names.forEach(name => known.add(normalizeName(name))));
+
+  const unclassified = new Map();
+
+  currentRecords.forEach(record => {
+    const text = stateText(record.state).replace(/\s+/g," ").trim();
+    const key = normalizeName(text);
+
+    if (text && !known.has(key) && !unclassified.has(key)) unclassified.set(key,text);
+  });
+
+  const box = document.getElementById("states-unclassified");
+  box.textContent = "";
+
+  if (!unclassified.size) {
+    const none = document.createElement("span");
+    none.className = "st-none";
+    none.textContent = "Aucun";
+    box.appendChild(none);
+    return;
+  }
+
+  [...unclassified.values()].slice(0,30).forEach(text => {
+    const chip = document.createElement("span");
+    chip.className = "st-chip";
+    chip.textContent = text;
+    box.appendChild(chip);
+  });
+}
+
+/* Remplit les champs du panneau à partir des réglages. */
+function populateStatesPanel(settings) {
+  for (const cat of STATE_CATEGORIES) {
+    document.getElementById(`st-names-${cat}`).value = settings[cat].names.join("\n");
+    document.getElementById(`st-color-${cat}`).value = settings[cat].color;
+  }
+
+  document.getElementById("st-color-autres").value = settings.autres.color;
+
+  refreshStatesPanelInfo(settings);
+}
+
+/* Enregistre les réglages dans les options du widget (donc dans le document Grist). */
+function persistStateSettings(settings) {
+  storedStateSettings = settings;
+  setStatesSaveInfo("Enregistrement…");
+
+  clearTimeout(statesSaveTimer);
+
+  statesSaveTimer = setTimeout(async () => {
+    statesSaveTimer = null;
+
+    try {
+      const setOption = typeof grist.setOption === "function"
+        ? grist.setOption.bind(grist)
+        : (grist.widgetApi && typeof grist.widgetApi.setOption === "function"
+            ? grist.widgetApi.setOption.bind(grist.widgetApi)
+            : null);
+
+      if (!setOption) throw new Error("grist.setOption indisponible");
+
+      await setOption("stateSettings", settings);
+      setStatesSaveInfo("Enregistré automatiquement dans le document");
+    } catch (err) {
+      console.warn("Réglages des états non enregistrés", err);
+      setStatesSaveInfo("Non enregistré : les réglages seront perdus au rechargement (droits insuffisants ?)");
+    }
+  }, 400);
+}
+
+function onStatesPanelInput() {
+  const settings = readStatesPanel();
+
+  persistStateSettings(settings);
+  refreshStatesPanelInfo(settings);
+  draw(currentRecords,FIXED_MAPPINGS);
+}
+
+function toggleStatesPanel(open) {
+  statesPanelOpen = open;
+
+  document.getElementById("states-panel").style.display = open ? "block" : "none";
+  document.getElementById("states-btn").setAttribute("aria-expanded", String(open));
+
+  if (open) populateStatesPanel(effectiveStateSettings());
+}
+
+document.getElementById("states-btn").addEventListener("click", () => toggleStatesPanel(!statesPanelOpen));
+document.getElementById("states-close").addEventListener("click", () => toggleStatesPanel(false));
+
+document.getElementById("states-reset").addEventListener("click", () => {
+  persistStateSettings(null);
+  populateStatesPanel(effectiveStateSettings());
+  draw(currentRecords,FIXED_MAPPINGS);
+});
+
+for (const cat of STATE_CATEGORIES) {
+  document.getElementById(`st-names-${cat}`).addEventListener("input", onStatesPanelInput);
+  document.getElementById(`st-color-${cat}`).addEventListener("input", onStatesPanelInput);
+}
+
+document.getElementById("st-color-autres").addEventListener("input", onStatesPanelInput);
 
 /* ----------- Dépendances ----------- */
 
@@ -905,9 +1301,9 @@ function dependencyPath(a, b) {
   return `M${x1},${y1} H${x1+GAP} V${yLeg} H${xt} V${yEnd}`;
 }
 
-/* Dessine les flèches en SVG par-dessus le tableau, à partir de la position réelle des barres.
+/* Dessine les flèches en SVG par-dessus le graphique, à partir de la géométrie calculée (layout).
    Si rien ne peut être dessiné, un message explique pourquoi. */
-function drawDependencies(table, container, records) {
+function drawDependencies(layout, width, height, records) {
   clearDependencies();
 
   if (!showDependencies) return;
@@ -933,37 +1329,11 @@ function drawDependencies(table, container, records) {
     return;
   }
 
-  const rows = new Map();
-  table.querySelectorAll("tr[data-row-id]").forEach(tr => {
-    rows.set(tr.getAttribute("data-row-id"), tr);
-  });
-
-  const containerRect = container.getBoundingClientRect();
-
-  const getBox = tr => {
-    if (!tr) return null;
-
-    const jalon = tr.querySelector(".jalon-cell > div:last-child");
-    const el = tr.querySelector(".task-cell") || jalon;
-    if (!el) return null;
-
-    const r = el.getBoundingClientRect();
-    const rowRect = tr.getBoundingClientRect();
-    const left = r.left - containerRect.left + container.scrollLeft;
-    const top = r.top - containerRect.top + container.scrollTop;
-    const rowTop = rowRect.top - containerRect.top + container.scrollTop;
-
-    return {
-      left, right:left+r.width, top, bottom:top+r.height, midY:top+r.height/2,
-      rowTop, isJalon:Boolean(jalon) && el === jalon
-    };
-  };
-
   let paths = "";
 
   edges.forEach(({ from, to }) => {
-    const a = getBox(rows.get(String(from.id)));
-    const b = getBox(rows.get(String(to.id)));
+    const a = layout.get(String(from.id));
+    const b = layout.get(String(to.id));
 
     if (!a || !b) return;
 
@@ -979,8 +1349,8 @@ function drawDependencies(table, container, records) {
 
   const svg = document.getElementById("dependencies-svg");
 
-  svg.setAttribute("width", table.offsetWidth);
-  svg.setAttribute("height", table.offsetHeight);
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
 
   svg.innerHTML =
     `<defs><marker id="dep-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">` +
@@ -998,166 +1368,148 @@ function drawDependencies(table, container, records) {
 
 /* ----------- Dessin principal ----------- */
 
+function clearGantt() {
+  const canvas = document.getElementById("gantt-canvas");
+  const header = document.getElementById("gantt-header");
+  const body = document.getElementById("gantt-body");
+
+  header.innerHTML = "";
+  header.style.width = "0px";
+  body.innerHTML = "";
+  body.style.width = "0px";
+  body.style.height = "0px";
+  canvas.style.width = "0px";
+  canvas.style.height = "0px";
+
+  document.getElementById("today-line").style.display = "none";
+  clearDependencies();
+}
+
 function draw(records,mappings) {
   currentRecords = records || [];
   currentMappings = FIXED_MAPPINGS;
 
-  const table = document.getElementById("gantt-table");
-  const line = document.getElementById("today-line");
   const container = document.getElementById("gantt-container");
+  const canvas = document.getElementById("gantt-canvas");
+  const header = document.getElementById("gantt-header");
+  const body = document.getElementById("gantt-body");
+  const line = document.getElementById("today-line");
 
-  clearDependencies();
+  clearGantt();
 
-  if (!currentRecords.length) {
-    table.innerHTML = "";
-    line.style.display = "none";
-    return;
-  }
+  if (!currentRecords.length) return;
 
   initializeDateRange(currentRecords);
 
-  if (!rangeInitialized) {
-    table.innerHTML = "";
-    line.style.display = "none";
-    return;
-  }
+  if (!rangeInitialized) return;
 
   if (highlightToday) ensureTodayInRange();
 
   const rangeStart = parseInputDate(document.getElementById("startDate").value);
   const rangeEnd = parseInputDate(document.getElementById("endDate").value);
 
-  if (!rangeStart || !rangeEnd || rangeStart>rangeEnd) {
-    table.innerHTML = "";
-    line.style.display = "none";
-    return;
-  }
+  if (!rangeStart || !rangeEnd || rangeStart>rangeEnd) return;
 
   const units = generateUnits(alignToUnit(rangeStart),alignToUnit(rangeEnd));
 
-  if (!units.length) {
-    table.innerHTML = "";
-    line.style.display = "none";
-    return;
-  }
+  if (!units.length) return;
 
-  const visibleStart = units[0].date;
-  const visibleEnd = nextUnitDate(units[units.length-1].date);
+  const firstDay = units[0].startDay;
+  const lastDay = units[units.length-1].endDay;
+  const totalWidth = units.length*COL_W;
+  const stateColor = buildStateLookup(effectiveStateSettings());
 
-  let html = "<tr>";
-
-  units.forEach(unit => {
-    html += `<td>${unit.label}</td>`;
-  });
-
-  html += "</tr>";
+  const layout = new Map();
+  let rowsHtml = "";
+  let y = HEADER_H;
 
   currentRecords.forEach(record => {
-    html += `<tr data-row-id="${escapeHtml(record.id)}">`;
-
     const start = parseDate(record.start);
     const end = parseDate(record.end);
     const taskName = escapeHtml(record.task);
-    const isJalon = Boolean(record.jalon);
 
-    if (isJalon) {
-      const col = findCol(units,start || end);
+    let height = ROW_H.empty;
+    let content = "";
 
-      if (col<0 || col>=units.length) {
-        html += emptyCells(units.length);
-      } else {
-        html += emptyCells(col);
-        html += `<td class="jalon-cell"><div>${taskName}</div><div></div></td>`;
-        html += emptyCells(units.length-col-1);
+    if (record.jalon) {
+      const date = start || end;
+
+      if (date) {
+        const day = dayNumber(date);
+
+        if (day >= firstDay && day < lastDay) {
+          /* Le losange est centré sur le milieu du jour : 1er du mois à gauche, dernier jour à droite. */
+          const x = Math.round(xOfDay(units,day+0.5));
+
+          height = ROW_H.jalon;
+          content = `<div class="jalon-cell" style="left:${x}px"><div class="jalon-label">${taskName}</div><div class="jalon-mark"></div></div>`;
+
+          layout.set(String(record.id),{
+            left:x-JALON_HALF, right:x+JALON_HALF,
+            top:y+25-JALON_HALF, bottom:y+25+JALON_HALF, midY:y+25,
+            rowTop:y, isJalon:true
+          });
+        }
       }
+    } else {
+      let taskStart = start || end;
+      let taskEnd = end || start;
 
-      html += "</tr>";
-      return;
+      if (taskStart && taskEnd) {
+        taskStart = startOfDay(taskStart);
+        taskEnd = startOfDay(taskEnd);
+
+        if (taskEnd<taskStart) {
+          [taskStart,taskEnd] = [taskEnd,taskStart];
+        }
+
+        /* La barre couvre les jours entiers : du début du 1er jour à la fin du dernier. */
+        const firstTaskDay = dayNumber(taskStart);
+        const endTaskDay = dayNumber(taskEnd)+1;
+
+        if (endTaskDay > firstDay && firstTaskDay < lastDay) {
+          const x1 = Math.round(xOfDay(units,firstTaskDay));
+          const x2 = Math.round(xOfDay(units,endTaskDay));
+          const width = Math.max(x2-x1,MIN_BAR_W);
+
+          height = ROW_H.task;
+          content = `<div class="task-cell" style="left:${x1}px;width:${width}px;background:${stateColor(record.state)}"><span class="task-label">${taskName}</span></div>`;
+
+          layout.set(String(record.id),{
+            left:x1, right:x1+width, top:y+22, bottom:y+30, midY:y+26,
+            rowTop:y, isJalon:false
+          });
+        }
+      }
     }
 
-    let taskStart = start || end;
-    let taskEnd = end || start;
-
-    if (!taskStart || !taskEnd) {
-      html += emptyCells(units.length)+"</tr>";
-      return;
-    }
-
-    taskStart = startOfDay(taskStart);
-    taskEnd = startOfDay(taskEnd);
-
-    if (taskEnd<taskStart) {
-      [taskStart,taskEnd] = [taskEnd,taskStart];
-    }
-
-    if (taskEnd<visibleStart || taskStart>=visibleEnd) {
-      html += emptyCells(units.length)+"</tr>";
-      return;
-    }
-
-    let startCol = taskStart<=visibleStart ? 0 : findCol(units,taskStart);
-    let endCol = taskEnd>=visibleEnd ? units.length-1 : findCol(units,taskEnd);
-
-    startCol = Math.max(0,Math.min(units.length-1,startCol));
-    endCol = Math.max(0,Math.min(units.length-1,endCol));
-
-    if (startCol<0 || endCol<startCol) {
-      html += emptyCells(units.length)+"</tr>";
-      return;
-    }
-
-    const colspan = endCol-startCol+1;
-
-    html += emptyCells(startCol);
-    html += `<td colspan="${colspan}"><div class="task-cell ${stateClass(record.state)}"><span class="task-label">${taskName}</span></div></td>`;
-    html += emptyCells(units.length-endCol-1)+"</tr>";
+    rowsHtml += `<div class="g-row" style="height:${height}px">${content}</div>`;
+    y += height;
   });
 
-  table.innerHTML = html;
+  header.innerHTML = units.map(unit => `<div class="col-head">${unit.label}</div>`).join("");
+  header.style.width = `${totalWidth}px`;
 
-  drawDependencies(table, container, currentRecords);
+  body.innerHTML = rowsHtml;
+  body.style.width = `${totalWidth}px`;
+  body.style.height = `${y-HEADER_H}px`;
 
-  if (!highlightToday) {
-    line.style.display = "none";
-    return;
-  }
+  canvas.style.width = `${totalWidth}px`;
+  canvas.style.height = `${y}px`;
 
-  const today = startOfDay(new Date());
-  const col = findCol(units,today);
+  drawDependencies(layout, totalWidth, y, currentRecords);
 
-  if (col<0 || col>=units.length) {
-    line.style.display = "none";
-    return;
-  }
+  if (!highlightToday) return;
 
-  const cell = table.rows[0]?.cells[col];
+  const todayDay = dayNumber(startOfDay(new Date()));
 
-  if (!cell) {
-    line.style.display = "none";
-    return;
-  }
+  if (todayDay < firstDay || todayDay >= lastDay) return;
 
-  let ratio;
-
-  if (scale === "day") {
-    ratio = 0.5;
-  } else {
-    const unitStart = units[col].date;
-    const unitEnd = nextUnitDate(unitStart);
-    const numerator = dateOrdinal(today)-dateOrdinal(unitStart);
-    const denominator = dateOrdinal(unitEnd)-dateOrdinal(unitStart);
-
-    ratio = denominator>0 ? numerator/denominator : 0;
-  }
-
-  ratio = Math.max(0,Math.min(1,ratio));
-
-  const cellRect = cell.getBoundingClientRect();
-  const containerRect = container.getBoundingClientRect();
-  const left = cellRect.left-containerRect.left+container.scrollLeft+ratio*cellRect.width;
+  const left = xOfDay(units,todayDay+0.5);
 
   line.style.left = `${left}px`;
-  line.style.height = `${table.offsetHeight}px`;
+  line.style.top = "0px";
+  line.style.height = `${y}px`;
   line.style.bottom = "auto";
   line.style.display = "block";
 
@@ -1179,9 +1531,7 @@ function onGristRecords(records,mappings) {
     );
 
     if (missing.length) {
-      document.getElementById("gantt-table").innerHTML = "";
-      document.getElementById("today-line").style.display = "none";
-      clearDependencies();
+      clearGantt();
 
       showWidgetError(
         "Le widget n'a pas reçu le mappage des colonnes obligatoires (tâche, date de début, date de fin). Ouvre les options du widget sur cette instance Grist et sélectionne à nouveau les colonnes correspondantes."
@@ -1199,9 +1549,27 @@ function onGristRecords(records,mappings) {
   clearWidgetError();
   updateDateRange(normalized);
   draw(normalized,FIXED_MAPPINGS);
+
+  if (statesPanelOpen) {
+    const settings = effectiveStateSettings();
+
+    if (statesPanelHasFocus()) refreshStatesPanelInfo(settings);
+    else populateStatesPanel(settings);
+  }
 }
 
 grist.onRecords((records,mappings) => onGristRecords(records,mappings));
+
+/* Réglages des états enregistrés dans le document. Pendant une modification en cours
+   (enregistrement en attente), on ignore l'écho pour ne pas écraser la saisie. */
+grist.onOptions(options => {
+  if (statesSaveTimer) return;
+
+  storedStateSettings = sanitizeStateSettings(options && options.stateSettings);
+
+  if (statesPanelOpen && !statesPanelHasFocus()) populateStatesPanel(effectiveStateSettings());
+  if (currentRecords.length) draw(currentRecords,FIXED_MAPPINGS);
+});
 </script>
 </body>
 </html>
